@@ -5,7 +5,7 @@ Requires at least: 2.0.2
 Tested up to: 3.31
 Stable tag: trunk
 
-Contextly is a related links service for high-quality, high-volume sites. The plugin helps sites show off their best content, increasing page-views per reader and time on site - key metrics for any site with advertisers. Think of it as compound interest for your site.
+Contextly is a related links service for high-quality, high-volume sites. The plugin helps sites show off their best content, increasing page-views per reader and time on site - key metrics for any site with advertisers. Think of it as compound interest for your site's traffic.
 
 The service is invite-only, and you will need to register to use the plugin and get an invite code.
 
@@ -18,22 +18,30 @@ The service is invite-only, and you will need to register to use the plugin and 
 
 1. Install using the Wordpress Gallery for the easiest installation or upload the core files, along with the css, img and js folder, to the `/wp-content/plugins/` directory.
 2. Activate the plugin through the 'Plugins' menu in WordPress.
-3. Register or apply to use the plugin by pressing the "Create See Also" button underneath the tags and categories widget on the right side of the compose page. You can also use either of the buttons on the Visual Editor.
+3. Create a new post.
+4. Register or apply to use the plugin by pressing the "Create See Also" button on the right side of the compose page underneath the tags and categories widget. You can also use either of the buttons on the Visual Editor.
 
 
 == Frequently Asked Questions ==
 
 = Why is Contextly's related stories plug-in invite-only?
 
-Contextly limits our service to sites with high editorial standards, so that we can focus our attention and time helping those sites as much as possible. Additionally, due to how Contextly works, our service simply works better for sites that publish often and with rich content.
+Contextly limits our service to sites with high editorial standards, so that we can focus our attention and time helping those sites as much as possible. Additionally, due to how Contextly works, our service simply works better for sites that publish rich content on a daily basis.
 
 = Can I modify the way the related stories are displayed on my site?
 
-Yes. Our service makes it possible to make many changes with a simple point-and-click interface, but for those who want much more control, we can help you create a custom CSS stylesheet.
+Yes. Our service makes it possible to make many changes with a simple point-and-click interface, but for those who want much more control, we can help you create a custom CSS stylesheet.     
+
+= Will I be able to see how well the links are doing?
+
+Yes. You will get a daily email with statistics about your traffic and related links. Contextly links will also show up in Google Analytics and other traffic measurement software.
+       
 
 == Screenshots ==
 
-1. Here's how the Contextly related stories plug-in looks on a Wired.com story.
+1. Here's how the Contextly related stories plug-in looks on a Wired.com story, showing the "Related Links" tab.     
+2. Here's the plug-in showing other interesting stories that aren't related. Think of it as the serendipity tab.
+
 
 == Changelog ==
 
