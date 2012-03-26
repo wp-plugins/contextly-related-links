@@ -1,18 +1,18 @@
 <?php
 /**
  * @package Contextly_Linker
- * @version 1.0.60
+ * @version 1.0.62
  */
 /*
 Plugin Name: Contextly Linker
 Plugin URI: http://contextly.com
 Description: Adds the Contextly related links tool to your blog. Contextly lets you create related links that helps your readers find more to read, increases your page views and shows off your best content.
 Author: Contextly
-Version: 1.0.60
+Version: 1.0.62
 */
 
 function contextly_get_plugin_url() {
-	return "http://contextlysitescripts.contextly.com/plugin/linker-plugin.js?version=1.0.60";
+	return "http://contextlysitescripts.contextly.com/plugin/linker-plugin.js?version=1.0.62";
 }
 
 function contextly_linker_widget_html($admin = false) {
@@ -46,8 +46,12 @@ function contextly_add_see_also_meta_box() {
         'side',
         'low'
     );
+
+    global $ctxActivate;
+    if (isset($ctxActivate)) {
+    	$ctxActivate->initSettings();
+    }
 }
-add_action('admin_init', 'contextly_add_see_also_meta_box', 1);
 
 function contextly_addbuttons() {
 	wp_enqueue_script('jquery');
@@ -63,14 +67,13 @@ function contextly_addbuttons() {
 }
 
 function register_contextly_button($buttons) {
-	$contextly = new ContextlyActivate();
-	$settings = $contextly->readSettings();
+	$options = get_option('contextly_options_general');
 
 	// Now we need to add contextly link btn at position of native link button
 	if (is_array($buttons) && count($buttons) > 0) {
 		foreach ($buttons as $btn_idx => $button) {
 			if ($button == "link") {
-				if ($settings['link_type'] == "override") {
+				if ($options['link_type'] == "override") {
 					$buttons[$btn_idx] = "contextlylink";
 				} else {
 					array_splice($buttons, $btn_idx, 0, "contextlylink");
@@ -78,7 +81,7 @@ function register_contextly_button($buttons) {
 			}
 		}
 	} else {
-		if (!$settings['link_type']) {
+		if (!$options['link_type']) {
 			array_push($buttons, "separator", "contextlylink");
 		}
 	}
@@ -100,83 +103,127 @@ add_action('init', 'contextly_addbuttons');
 // Main contextly class
 if (!class_exists("ContextlyActivate")) {
 	class ContextlyActivate {
-		var $ctxVar ="ContextlySettings";
-		var $serverUrl = "https://contextly.com/";
+		var $server_url= "https://contextly.com/";
+		var $general_settings_key = 'contextly_options_general';
+		var $advanced_settings_key = 'contextly_options_advanced';
+		var $plugin_options_key = 'contextly_options';
+		var $plugin_settings_tabs = array();
 
 		function ContextlyActivate() {
+			$this->general_settings = (array) get_option($this->general_settings_key);
+			$this->advanced_settings = (array) get_option($this->advanced_settings_key);
+
+			// Merge with defaults
+			$this->general_settings = array_merge( array(
+			        'link_type_override' => 'Override',
+					'link_type_default' => 'Default'
+			), $this->general_settings );
+
+			$this->advanced_settings = array_merge( array(
+			        'linker_target_id' => 'CSS ID',
+			        'linker_block_position' => 'Position'
+			), $this->advanced_settings );
 		}
 
-		function init() {
-			$this->readSettings();
+		function init() {}
+
+		function addSettngsMenu() {
+			add_options_page('Contextly Linker', 'Contextly Linker', 'manage_options', $this->plugin_options_key, array(&$this, 'showSettings'));
+			add_filter('plugin_action_links', array(&$this, 'addSettingsLink'), 10, 2);
 		}
 
-		function readSettings() {
-			$ctxOptions = array(
-					'link_type' => "",
-			);
-			$opts = get_option($this->ctxVar);
-			if(!empty($opts)) {
-				foreach($opts as $var => $val) {
-					$ctxOptions[$var] = $val;
-				}
-			}
-			update_option($this->ctxVar, $ctxOptions);
-			return $ctxOptions;
+		function initSettings() {
+			// Register settings
+			register_setting($this->general_settings_key, $this->general_settings_key, array(&$this, 'settingsValidate'));
+			add_settings_section('main_section', 'General', array(&$this, 'settingsMainSection'), $this->general_settings_key);
+			add_settings_field('link_type_override', 'Override', array(&$this, 'settingsOverride'), $this->general_settings_key, 'main_section');
+			add_settings_field('link_type_default', 'Default', array(&$this, 'settingsDefault'), $this->general_settings_key, 'main_section');
+			$this->plugin_settings_tabs[$this->general_settings_key] = 'General';
+
+			register_setting($this->advanced_settings_key, $this->advanced_settings_key, array(&$this, 'settingsValidate'));
+			add_settings_section('advanced_section', 'Advanced', array(&$this, 'settingsLayoutSection'), $this->advanced_settings_key);
+			add_settings_field('linker_target_id', 'CSS Element ID', array(&$this, 'settingsTargetInput'), $this->advanced_settings_key, 'advanced_section');
+			add_settings_field('linker_block_position', 'Position', array(&$this, 'settingsBlockPosition'), $this->advanced_settings_key, 'advanced_section');
+			$this->plugin_settings_tabs[$this->advanced_settings_key] = 'Advanced';
+		}
+
+		function settingsValidate($input) {
+			return $input;
+		}
+
+		function settingsMainSection() {}
+
+		function settingsLayoutSection() {}
+
+		function settingsOverride() {
+			$options = get_option($this->general_settings_key);
+			echo "<label>";
+			echo "<input id='link_type_override' name='{$this->general_settings_key}[link_type]' type='radio' value='override' " . ($options['link_type'] == "override" ? "checked='checked'" : "") . "/>";
+			echo " With this setting, the Wordpress link button in the Visual editor is changed to used Contextly to add links to the body of your posts. There is no dedicated button for adding single links through Contextly with this option.";
+			echo "</label>";
+		}
+
+		function settingsDefault() {
+			$options = get_option($this->general_settings_key);
+			echo "<label>";
+			echo "<input id='link_type_default' name='{$this->general_settings_key}[link_type]' type='radio' value='' " . (!$options['link_type'] ? "checked='checked'" : "") . "/>";
+			echo " With this setting, Wordpress's single link button in the Visual editor works as it normally does. The Visual editor bar gets an additional single link button so you can add links to the body of your post using Contextly.";
+			echo "</label>";
+		}
+
+		function settingsTargetInput() {
+			$options = get_option($this->advanced_settings_key);
+			echo "<input id='linker_target_id' name='{$this->advanced_settings_key}[target_id]' type='text' size='30' value='{$options["target_id"]}' />";
+		}
+
+		function settingsBlockPosition() {
+			$options = get_option($this->advanced_settings_key);
+			echo "
+				<select id='linker_block_position' name='{$this->advanced_settings_key}[block_position]'>
+					<option value='after' " . ($options["block_position"] == "after" ? "selected='selected'" : "") . ">Below</option>
+					<option value='before' " . ($options["block_position"] == "before" ? "selected='selected'" : "") . ">Above</option>
+				</select>
+			";
 		}
 
 		function showSettings()	{
-         	$opts = $this->readSettings();
-         	if (isset($_POST['submit'])) {
-            	if(isset($_POST['link_type'])) {
-               		$opts['link_type'] = $_POST['link_type'];
-            	}
-            	update_option($this->ctxVar, $opts);
-               echo '<div class="updated"><p><strong>';
-               _e("Your changes were saved.");
-               echo '</strong></p></div>';
-         	}
+			$tab = isset( $_GET['tab'] ) ? $_GET['tab'] : $this->general_settings_key;
 			?>
 			<div class="wrap">
-				<div class="icon32" id="icon-options-general"><br></div><h2>Contextly Linker Settings</h2>
-
+				<?php $this->showSettingsTabs(); ?>
 				<p>
 					The majority of Contextly's settings, including the display options, are set on the Contextly web site.
 					To navigate to them, open any post, click one of the "Create See Also" buttons. Then look for the "Settings" link on the top of the page.
 				</p>
 
+				<? if ($tab == $this->advanced_settings_key) { ?>
+			        <p>
+						By default, Contextly is set to show up as the very last object in your post template. For most sites, this is perfect. However, if you have other plugins that come after the body of the text, you can adjust where Contextly displays using this setting.
+			        </p>
+			        <p>
+						To set the placement of Contextly related links relative to other elements, simply provide the other item's CSS element ID, and whether you prefer to be above or below that element.
+			        </p>
+				<? } ?>
 
-				<form method="post" action="<?php echo $_SERVER["REQUEST_URI"]; ?>" name="form">
-					<table class="form-table">
-						<tbody>
-							<tr>
-								<th>
-									<label>
-										<input type="radio" class="tog" value="override" name="link_type" <?php echo ($opts['link_type'] == "override" ? "checked='checked'" : "") ?>> Override
-									</label>
-								</th>
-								<td>
-									With this setting, the Wordpress link button in the Visual editor is changed to used Contextly to add links to the body of your posts. There is no dedicated button for adding single links through Contextly with this option.
-								</td>
-							</tr>
-							<tr>
-								<th>
-									<label>
-										<input type="radio" class="tog" value="" name="link_type" <?php echo (!$opts['link_type'] ? "checked='checked'" : "") ?>> Dedicated
-									</label>
-								</th>
-								<td>
-									With this setting, Wordpress's single link button in the Visual editor works as it normally does. The Visual editor bar gets an additional single link button so you can add links to the body of your post using Contextly.
-								</td>
-							</tr>
-						</tbody>
-					</table>
-
-					<p class="submit">
-						<input type="submit" value="Save Changes" class="button-primary" id="submit" name="submit">
-					</p>
+				<form action="options.php" method="post">
+					<?php settings_fields($tab); ?>
+					<?php do_settings_sections($tab); ?>
+					<?php submit_button(); ?>
 				</form>
 			</div>
-			<?php
+			<?
+		}
+
+		function showSettingsTabs() {
+			$current_tab = isset( $_GET['tab'] ) ? $_GET['tab'] : $this->general_settings_key;
+
+			screen_icon();
+			echo '<h2 class="nav-tab-wrapper">';
+			foreach ( $this->plugin_settings_tabs as $tab_key => $tab_caption ) {
+				$active = $current_tab == $tab_key ? 'nav-tab-active' : '';
+				echo '<a class="nav-tab ' . $active . '" href="?page=' . $this->plugin_options_key . '&tab=' . $tab_key . '">' . $tab_caption . '</a>';
+			}
+			echo '</h2>';
 		}
 
 		// Cut only needed data from post object
@@ -201,6 +248,16 @@ if (!class_exists("ContextlyActivate")) {
 			return $tags;
 		}
 
+		function get_options() {
+			$general_option = get_option($this->general_settings_key);
+			if (!is_array($general_option)) $general_option = array();
+
+			$advanced_option = get_option($this->advanced_settings_key);
+			if (!is_array($advanced_option)) $advanced_option = array();
+
+			return array_merge($general_option, $advanced_option);
+		}
+
 		// Add main js stuff for contextly api calls
 		function buildJsData($admin_mode = false) {
 			global $post;
@@ -214,6 +271,8 @@ if (!class_exists("ContextlyActivate")) {
 						page_permalink: "<?php echo get_permalink($post->ID); ?>",
 						admin: <?php echo (int)$admin_mode; ?>
 			    };
+
+				var contextly_settings = <?php echo json_encode($this->get_options()); ?>;
 
 			    (function() {
 					var src = document.createElement('script');
@@ -256,27 +315,25 @@ if (!class_exists("ContextlyActivate")) {
 
 		// Add settings link on plugins page
 		function addSettingsLink($links, $file) {
-			static $this_plugin;
-			if (!$this_plugin) $this_plugin = plugin_basename(__FILE__);
-
-			if ($file == $this_plugin){
-				$settings_link = '<a title="Contextly Linker settings" href="admin.php?page=contextly-linker.php">'.__("Settings").'</a>';
-				$links[] = $settings_link;
-			}
+			if ($file == plugin_basename(__FILE__))
+			$links[] = "<a href='admin.php?page=contextly_options'>" . __('Settings') . "</a>";
 			return $links;
 		}
 
 		// Publish post action
 		function publishPostAction($post_ID, $post) {
-			// Find api url on contextly server
-			$url_parts = parse_url($this->serverUrl);
-			$api_url = "http://{$url_parts["host"]}/sites/api2.php";
+			if ($post->post_status == "publish" && $post->post_type == "post") {
+				// Find api url on contextly server
+				$url_parts = parse_url($this->server_url);
+				$api_url = "http://{$url_parts["host"]}/sites/api2.php";
 
-			$params = array(
-				'http' => array(
-				    	'method' => 'POST',
-				        'content' => http_build_query(
-							array(
+				// Make call for save post details in contextly
+				$response = wp_remote_retrieve_body(
+					wp_remote_post(
+						$api_url,
+						array(
+							'method' => 'POST',
+							'body' => array(
 					        	"method" => "publish-post",
 					        	"post" => get_post($post, ARRAY_A),
 								"post_tags" =>  $this->getPostTagsToSend($post),
@@ -285,27 +342,11 @@ if (!class_exists("ContextlyActivate")) {
 								"page_permalink" => get_permalink($post_ID),
 							)
 						)
-				)
-			);
-
-			$ctx = stream_context_create($params);
-			$fp = @fopen($api_url, 'rb', false, $ctx);
-			if (!$fp) return false;
-			$response = @stream_get_contents($fp);
-			if ($response !== false) return true;
+					)
+				);
+			}
 		}
 
-
-	}
-}
-
-if (!function_exists("ContextlyBtnSetting")) {
-	function ContextlyBtnSetting() {
-		global $ctxActivate;
-		if (!isset($ctxActivate)) return;
-		if (function_exists("add_options_page")) {
-			add_options_page('Contextly Linker', 'Contextly Linker', 'activate_plugins', basename(__FILE__), array(&$ctxActivate, 'showSettings'));
-		}
 	}
 }
 
@@ -314,14 +355,10 @@ if (class_exists("ContextlyActivate")) {
 }
 
 if (isset($ctxActivate)) {
-	add_action('admin_menu', 'ContextlyBtnSetting');
+	add_action('admin_menu', array(&$ctxActivate,'addSettngsMenu'));
 	add_action('admin_head', array(&$ctxActivate,'adminHead'), 1);
 	add_action('wp_head', array(&$ctxActivate, 'head'), 1);
-	add_action('activate_contextly-linker/contextly-linker.php', array(&$ctxActivate, 'init'));
-	add_filter('plugin_action_links', array(&$ctxActivate, 'addSettingsLink'), 10, 2 );
 	add_action('publish_post', array(&$ctxActivate, 'publishPostAction'), 10, 2);
-	add_action('save_post', array(&$ctxActivate, 'publishPostAction'), 10, 2);
+	add_action('admin_init', 'contextly_add_see_also_meta_box', 1);
 }
-
-
 ?>

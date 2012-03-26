@@ -45,7 +45,14 @@ Yes. You will get a daily email with statistics about your traffic and related l
 
 == Changelog ==
 
-= 1.0 =
+= 1.6.1 =
+
+- Added a setting in WP to allow sites to place the related links widget in spots other than at the very end of a post
+- Small technical changes to better work with Wordpress API
+
+= 1.6 =
+
+
 
 
 == Upgrade Notice ==
