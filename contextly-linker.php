@@ -1,18 +1,18 @@
 <?php
 /**
  * @package Contextly_Linker
- * @version 1.0.63
+ * @version 1.0.65
  */
 /*
 Plugin Name: Contextly Linker
 Plugin URI: http://contextly.com
 Description: Adds the Contextly related links tool to your blog. Contextly lets you create related links that helps your readers find more to read, increases your page views and shows off your best content.
 Author: Contextly
-Version: 1.0.63
+Version: 1.0.65
 */
 
 function contextly_get_plugin_url() {
-	return "http://contextlysitescripts.contextly.com/plugin/linker-plugin.js?version=1.0.63";
+	return "http://contextlysiteimages.contextly.com/_plugin/1.0.65/js/linker-plugin.js";
 }
 
 function contextly_linker_widget_html($admin = false) {
@@ -269,7 +269,7 @@ if (!class_exists("ContextlyActivate")) {
 		function buildJsData($admin_mode = false) {
 			global $post;
 			?>
-			<script type="text/javascript">
+			<script data-cfasync="false" type="text/javascript">
 			    var contextly_post_object = {
 						post: <?php echo json_encode($this->getPostToSend($post)); ?>,
 						post_tags: <?php echo json_encode($this->getPostTagsToSend($post)); ?>,
@@ -277,7 +277,8 @@ if (!class_exists("ContextlyActivate")) {
 						blog_title: "<?php echo get_bloginfo("name"); ?>",
 						page_permalink: "<?php echo get_permalink($post->ID); ?>",
 						author: <?php echo json_encode(array("id" => $post->post_author, "firstname" => get_the_author_meta("first_name", $post->post_author), "lastname" => get_the_author_meta("last_name", $post->post_author))) ?>,
-						admin: <?php echo (int)$admin_mode; ?>
+						admin: <?php echo (int)$admin_mode; ?>,
+						version: '1.0.65'
 			    };
 
 				var contextly_settings = <?php echo json_encode($this->get_options()); ?>;

@@ -44,13 +44,21 @@ Yes. You will get a daily email with statistics about your traffic and related l
 
 
 == Changelog ==
+          
+= 1.0.63 = 
 
-= 1.6.1 =
+- Made a small change to be compatible with sites using Cloudflare
+
+= 1.0.62 = 
+
+- Added an easier way to get to the settings page and cleaned up the WP settings page
+
+= 1.0.61 =
 
 - Added a setting in WP to allow sites to place the related links widget in spots other than at the very end of a post
 - Small technical changes to better work with Wordpress API
 
-= 1.6 =
+= 1.0.60 =
 
 
 
