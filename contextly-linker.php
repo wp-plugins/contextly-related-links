@@ -200,28 +200,28 @@ if (!class_exists("ContextlyActivate")) {
 			?>
 			<script type="text/javascript">
 				function open_contextly_settings() {
-					window.open("<? echo $this->server_url ?>redirect.php?type=settings&blog_url=<?php echo site_url(); ?>");
+					window.open("<?php echo $this->server_url ?>redirect.php?type=settings&blog_url=<?php echo site_url(); ?>");
 				}
 			</script>
 			<div class="wrap">
 				<?php $this->showSettingsTabs(); ?>
 
-				<? if ($tab == $this->advanced_settings_key) { ?>
+				<?php if ($tab == $this->advanced_settings_key) { ?>
 					<form action="options.php" method="post">
 						<?php settings_fields($tab); ?>
 						<?php do_settings_sections($tab); ?>
 						<?php submit_button(); ?>
 					</form>
-				<? } else { ?>
+				<?php } else { ?>
 					<h3>
 						The majority of  the settings for Contextly are handled outside Wordpress. Press the settings button to go to your settings panel. You will need your Twitter credentials to login.
 					</h3>
 					<p>
 						<input type="button" value="Settings" onclick="open_contextly_settings();" style="font-size: 18px; padding: 5px;" />
 					</p>
-				<? } ?>
+				<?php } ?>
 			</div>
-			<?
+			<?php
 		}
 
 		function showSettingsTabs() {
