@@ -1,18 +1,18 @@
 <?php
-/**
- * @package Contextly_Linker
- * @version 1.0.65
- */
+
 /*
 Plugin Name: Contextly Linker
 Plugin URI: http://contextly.com
 Description: Adds the Contextly related links tool to your blog. Contextly lets you create related links that helps your readers find more to read, increases your page views and shows off your best content.
 Author: Contextly
-Version: 1.0.65
+Version: 1.0.70
 */
 
+define( "CONTEXTLY_PLUGIN_VERSION", "1.0.70" );
+define( "CONTEXTLY_MAIN_SERVER_URL", "https://contextly.com/" );
+
 function contextly_get_plugin_url() {
-	return "http://contextlysiteimages.contextly.com/_plugin/1.0.65/js/linker-plugin.js";
+	return "https://c713421.ssl.cf2.rackcdn.com/_plugin/" . CONTEXTLY_PLUGIN_VERSION . "/js/linker-plugin.js";
 }
 
 function contextly_linker_widget_html($admin = false) {
@@ -54,8 +54,6 @@ function contextly_add_see_also_meta_box() {
 }
 
 function contextly_addbuttons() {
-	wp_enqueue_script('jquery');
-
 	// Don't bother doing this stuff if the current user lacks permissions
 	if (! current_user_can('edit_posts') && ! current_user_can('edit_pages') ) return;
 
@@ -103,7 +101,7 @@ add_action('init', 'contextly_addbuttons');
 // Main contextly class
 if (!class_exists("ContextlyActivate")) {
 	class ContextlyActivate {
-		var $server_url= "https://contextly.com/";
+		var $server_url= CONTEXTLY_MAIN_SERVER_URL;
 		var $general_settings_key = 'contextly_options_general';
 		var $advanced_settings_key = 'contextly_options_advanced';
 		var $plugin_options_key = 'contextly_options';
@@ -200,7 +198,7 @@ if (!class_exists("ContextlyActivate")) {
 			?>
 			<script type="text/javascript">
 				function open_contextly_settings() {
-					window.open("<?php echo $this->server_url ?>redirect.php?type=settings&blog_url=<?php echo site_url(); ?>");
+					window.open("<?php echo $this->server_url ?>redirect/?type=settings&blog_url=<?php echo site_url(); ?>");
 				}
 			</script>
 			<div class="wrap">
@@ -243,6 +241,7 @@ if (!class_exists("ContextlyActivate")) {
 			$post_data["post_title"] = $post->post_title;
 			$post_data["post_date"] = $post->post_date;
 			$post_data["post_status"] = $post->post_status;
+			$post_data["post_type"] = $post->post_type;
 			return $post_data;
 		}
 
@@ -264,11 +263,21 @@ if (!class_exists("ContextlyActivate")) {
 
 			return $advanced_option;
 		}
+		
+		function getAuthorInfo( $post ) {
+			return array(
+						"id" => $post->post_author,
+						"firstname" => get_the_author_meta( "first_name", $post->post_author ), 
+						"lastname" => get_the_author_meta( "last_name", $post->post_author ),
+						"display_name" => get_the_author_meta( "display_name", $post->post_author )
+					);
+		}
 
 		// Add main js stuff for contextly api calls
 		function buildJsData($admin_mode = false) {
 			global $post;
-			?>
+
+            ?>
 			<script data-cfasync="false" type="text/javascript">
 			    var contextly_post_object = {
 						post: <?php echo json_encode($this->getPostToSend($post)); ?>,
@@ -276,30 +285,18 @@ if (!class_exists("ContextlyActivate")) {
 						blog_url: "<?php echo site_url(); ?>",
 						blog_title: "<?php echo get_bloginfo("name"); ?>",
 						page_permalink: "<?php echo get_permalink($post->ID); ?>",
-						author: <?php echo json_encode(array("id" => $post->post_author, "firstname" => get_the_author_meta("first_name", $post->post_author), "lastname" => get_the_author_meta("last_name", $post->post_author))) ?>,
+						author: <?php echo json_encode( $this->getAuthorInfo( $post ) ) ?>,
 						admin: <?php echo (int)$admin_mode; ?>,
-						version: '1.0.65'
+						version: "<?php echo CONTEXTLY_PLUGIN_VERSION ?>"
 			    };
 
 				var contextly_settings = <?php echo json_encode($this->get_options()); ?>;
-
-			    (function() {
-					var src = document.createElement('script');
-					src.async = true;
-					src.src = "<?php echo contextly_get_plugin_url(); ?>";
-					if (contextly_post_object.admin) {
-						if (src.readyState) { // IE
-				    	} else { //Others
-				        	src.onerror = function () {
-					        	jQuery("#linker_widget").html("Error loading data from <a target='_blank' href='http://contextly.com'>contextly.com</a>. Please <a target='_blank' href='http://contextly.com'>contact us</a> so we can help resolve the problem.");
-				        	};
-				    	}
-				    }
-					document.getElementsByTagName('head')[0].appendChild(src);
-				}());
 			</script>
 			<?php
-		}
+
+            wp_enqueue_script( 'jquery' );
+            wp_enqueue_script( 'contextly', contextly_get_plugin_url(), 'jquery', CONTEXTLY_PLUGIN_VERSION, false );
+        }
 
 		// Admin header
 		function adminHead() {
@@ -307,9 +304,9 @@ if (!class_exists("ContextlyActivate")) {
 
 			// Check if this is admin edit page action
 			if ($pagenow == "post.php" || $pagenow == "post-new.php") {
-				?>
-				<script type="text/javascript" src="//contextlysitescripts.contextly.com/js/easyXDM.min.js"></script>
-				<script type="text/javascript" src="//contextlysitescripts.contextly.com/js/jquery.xdomainajax.js"></script>
+                ?>
+				<script type="text/javascript" src="https://c714015.ssl.cf2.rackcdn.com/js/easyXDM.min.js"></script>
+				<script type="text/javascript" src="https://c714015.ssl.cf2.rackcdn.com/js/jquery.xdomainajax.js"></script>
 				<?php echo $this->buildJsData(true); ?>
 				<?php
 			}
@@ -318,7 +315,7 @@ if (!class_exists("ContextlyActivate")) {
 		// Normal page header
 		function head() {
 			if (is_single()) {
-				$this->buildJsData();
+                $this->buildJsData();
 			}
 		}
 
@@ -394,4 +391,3 @@ if (isset($ctxActivate)) {
 	add_action('publish_post', array(&$ctxActivate, 'publishPostAction'), 10, 2);
 	add_action('admin_init', 'contextly_add_see_also_meta_box', 1);
 }
-?>
