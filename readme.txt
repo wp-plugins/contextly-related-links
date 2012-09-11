@@ -45,6 +45,11 @@ Yes. You will get a daily email with statistics about your traffic and related l
 
 == Changelog ==
           
+=1.0.67
+
+- Core JavaScript files now called over HTTPS
+- Changed jQuery check to use built-in Wordpress function.
+
 = 1.0.63 = 
 
 - Made a small change to be compatible with sites using Cloudflare
@@ -69,5 +74,5 @@ Yes. You will get a daily email with statistics about your traffic and related l
 
 == About Contextly ==
 
-Contextly creates tools for high-quality sites that care about their content. [Contextly](http://contextly.com "Contextly") was founded in 2010 by veteran online journalist Ryan Singel, a longtime writer and editor for Wired. If you have questions, please write us at info@contextly.com
+Contextly creates tools for high-quality sites that care about their content. [Contextly](http://contextly.com "Contextly") was founded in 2010 by veteran online journalist Ryan Singel, a writer and editor for Wired. If you have questions, please write us at info@contextly.com
 
