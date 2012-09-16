@@ -2,7 +2,7 @@
 Contributors: rsingel, andrewcgg
 Tags: related links, SEO, promotion, see also, related stories
 Requires at least: 2.0.2
-Tested up to: 3.31
+Tested up to: 3.42
 Stable tag: trunk
 
 Contextly is a related links service for high-quality, high-volume sites. The plugin helps sites show off their best content, increasing page-views per reader and time on site - key metrics for any site with advertisers. Think of it as compound interest for your site's traffic.
