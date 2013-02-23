@@ -2,7 +2,7 @@
 Contributors: rsingel, andrewcgg
 Tags: related links, SEO, promotion, see also, related stories
 Requires at least: 2.0.2
-Tested up to: 3.42
+Tested up to: 3.51
 Stable tag: trunk
 
 Contextly is a related links service for high-quality, high-volume sites. The plugin helps sites show off their best content, increasing page-views per reader and time on site - key metrics for any site with advertisers. Think of it as compound interest for your site's traffic.
@@ -40,10 +40,18 @@ Yes. You will get a daily email with statistics about your traffic and related l
 == Screenshots ==
 
 1. Here's how the Contextly related stories plug-in looks on a Wired.com story, showing the "Related Links" tab.     
-2. Here's the plug-in showing other interesting stories that aren't related. Think of it as the serendipity tab.
+2. Here's the plug-in showing other interesting stories that aren't necessarily related. Think of it as the serendipity tab.      
+3. Here's a sidebar created in seconds using the plugin.
 
 
-== Changelog ==
+== Changelog ==  
+
+=1.0.76
+
+- Completely new API
+- Ability to add Sidebars into the body of posts
+- Support for showing links and sidebars on posts, pages or both
+- Option to turn off Contextly content on per page/post basis
           
 =1.0.67
 
