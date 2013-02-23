@@ -4,10 +4,10 @@ tinymce.create('tinymce.plugins.ContextlyPlugin', {
     init : function(ed, url) {
         // Register an example button
         ed.addButton('contextly', {
-            title : 'Show Contextly Linker Window',
+            title : 'Show Contextly Window',
             image : url + '/img/contextly.gif',
 			onclick : function() {
-				 contextly_create_see_also();
+                Contextly.PopupHelper.getInstance().snippetPopup();
             }
         });
     }
