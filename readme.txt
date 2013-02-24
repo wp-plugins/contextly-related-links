@@ -51,7 +51,7 @@ Yes. You will get a daily email with statistics about your traffic and related l
 - Completely new API
 - Ability to add Sidebars into the body of posts
 - Support for showing links and sidebars on posts, pages or both
-- Option to turn off Contextly content on per page/post basis
+- Option to turn off Contextly content on per page/post basis 
           
 =1.0.67
 
