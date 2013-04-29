@@ -51,6 +51,10 @@ class Contextly
         return false;
     }
 
+	private function isHttpsRequest() {
+		return CONTEXTLY_ACCESS_HTTPS;
+	}
+
     public function checkWidgetDisplayType() {
         global $post;
 
@@ -68,7 +72,7 @@ class Contextly
 
     public function getAPIClientOptions() {
         $client_options = array(
-            'server-url'    => CONTEXTLY_API_SERVER_URL,
+            'server-url'    => Urls::getApiServerUrl(),
             'auth-api'      => 'auth/auth',
             'appID'         => '',
             'appSecret'     => ''
@@ -93,6 +97,7 @@ class Contextly
 
         return array(
             'post_id'       => $post->ID,
+            'post_date'     => $post->post_date,
             'post_modified' => $post->post_modified,
             'author'        => $post->post_author,
             'type'          => $post->post_type,
@@ -141,11 +146,11 @@ class Contextly
         add_shortcode('contextly_sidebar', array( $this, 'prepareSidebar' ) );
 
         // After rendered shortcodes, we can run wp formatting filter again
-        remove_filter( 'the_content', 'wpautop' );
-        remove_filter( 'the_excerpt', 'wpautop' );
+        //remove_filter( 'the_content', 'wpautop' );
+        //remove_filter( 'the_excerpt', 'wpautop' );
 
-        add_filter( 'the_content', array( $this, 'wpautop' ), 12 );
-        add_filter( 'the_excerpt', array( $this, 'wpautop' ), 12 );
+        //add_filter( 'the_content', array( $this, 'wpautop' ), 12 );
+        //add_filter( 'the_excerpt', array( $this, 'wpautop' ), 12 );
     }
 
     public function wpautop( $content ) {
@@ -208,9 +213,9 @@ class Contextly
     }
 
     public function addMceButtons( $plugin_array ) {
-        $plugin_array['contextlylink'] = plugins_url('js/contextly_linker_wplink.js' , __FILE__ );
-        $plugin_array['contextlysidebar'] = plugins_url('js/contextly_linker_sidebar.js' , __FILE__ );
-        $plugin_array['contextly'] = plugins_url('js/contextly_linker_button.js' , __FILE__ );
+        $plugin_array['contextlylink'] = plugins_url('js/contextly_linker_wplink.js?v=' . CONTEXTLY_PLUGIN_VERSION , __FILE__ );
+        $plugin_array['contextlysidebar'] = plugins_url('js/contextly_linker_sidebar.js?v=' . CONTEXTLY_PLUGIN_VERSION , __FILE__ );
+        $plugin_array['contextly'] = plugins_url('js/contextly_linker_button.js?v=' . CONTEXTLY_PLUGIN_VERSION , __FILE__ );
 
         return $plugin_array;
     }
@@ -265,6 +270,14 @@ class Contextly
         return "<div id='" . self::WIDGET_SNIPPET_ID . "' class='" . self::WIDGET_SNIPPET_CLASS . "'>" . $default_html_code . "</div>" . $additional_admin_controls;
     }
 
+	function getPluginJs() {
+		if ( CONTEXTLY_MODE == 'production' ) {
+			return Urls::getPluginJsCdnUrl( 'contextly-wordpress.js' );
+		} else {
+		    return plugins_url( 'js/contextly-wordpress.js' , __FILE__ );
+        }
+	}
+
     function loadScripts() {
         global $post;
 
@@ -276,9 +289,9 @@ class Contextly
         {
             wp_enqueue_script( 'jquery' );
             wp_enqueue_script( 'json2' );
-            wp_enqueue_script( 'easy_xdm', 'http://contextlysitescripts.contextly.com/js/easyXDM.min.js' );
-            wp_enqueue_script( 'contextly-create-class', plugins_url( 'js/contextly-class.js' , __FILE__ ), 'jquery' );
-            wp_enqueue_script( 'contextly', contextly_get_plugin_url(), 'jquery', CONTEXTLY_PLUGIN_VERSION, false );
+            wp_enqueue_script( 'easy_xdm', Urls::getMainJsCdnUrl( 'easyXDM.min.js' ), 'jquery', CONTEXTLY_PLUGIN_VERSION );
+            wp_enqueue_script( 'contextly-create-class', plugins_url( 'js/contextly-class.js' , __FILE__ ), 'easy_xdm', CONTEXTLY_PLUGIN_VERSION );
+            wp_enqueue_script( 'contextly', $this->getPluginJs(), 'contextly-create-class', CONTEXTLY_PLUGIN_VERSION, false );
 
             $ajax_url = plugins_url( 'ajax.php' , __FILE__ );
             $home_url = home_url( '/' );
@@ -297,18 +310,19 @@ class Contextly
 
             $data = array(
                 'ajax_url'      => $ajax_url,
-                'api_server'    => CONTEXTLY_API_SERVER_URL,
+                'api_server'    => Urls::getApiServerUrl(),
+                'popup_server'  => Urls::getPopupServerUrl(),
                 'app_id'        => $api_options[ 'appID' ],
-                'popup_server'  => CONTEXTLY_POPUP_SERVER_URL,
                 'settings'      => $this->getSettingsOptions(),
                 'post'          => $this->getPostData(),
                 'admin'         => (boolean)is_admin(),
                 'mode'          => CONTEXTLY_MODE,
+                'https'         => CONTEXTLY_HTTPS,
                 'version'       => CONTEXTLY_PLUGIN_VERSION
             );
 
             wp_localize_script(
-                'jquery',
+                'easy_xdm',
                 'Contextly',
                 array( 'l10n_print_after' => 'Contextly = ' . json_encode( $data ) . ';' )
             );
@@ -333,7 +347,8 @@ class Contextly
                 $post_data = array(
                     'post_id'       => $post->ID,
                     'post_title'    => $post->post_title,
-                    'post_date'     => $post->post_modified,
+                    'post_date'     => $post->post_date,
+                    'post_modified' => $post->post_modified,
                     'post_status'   => $post->post_status,
                     'post_type'     => self::PAGE_TYPE_POST,
                     'post_content'  => $post->post_content,
