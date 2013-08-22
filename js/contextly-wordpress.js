@@ -132,7 +132,7 @@ Contextly.PageView = Contextly.createClass({
         // Check if we have error on page
         if ( this.isError() && Contextly.Settings.getInstance().isAdmin() ) {
             var message = '';
-            var url = 'http://contextly.com/contact-us/';
+            var url = 'admin.php?page=contextly_options&tab=contextly_options_api';
 
             if ( this.error.error ) {
                 if ( this.error.error_code == Contextly.Errors.ERROR_FORBIDDEN ) {
@@ -140,7 +140,6 @@ Contextly.PageView = Contextly.createClass({
                 } else if ( this.error.error_code == Contextly.Errors.ERROR_SUSPENDED ) {
                     message = "Your account has been suspended. If this is an error, please contact us via <a href='http://contextly.com/contact-us/'>support@contextly.com</a>.";
                 } else {
-                    url = "admin.php?page=contextly_options&tab=contextly_options_api";
                     message = "Please check your API settings on the Contextly plugin <a href='admin.php?page=contextly_options&tab=contextly_options_api'>Settings</a> page.";
                 }
             } else {
@@ -174,7 +173,6 @@ Contextly.PageView = Contextly.createClass({
         jQuery( '#publish' ).click(
             function() {
                 if ( Contextly.Loader.getInstance().isWidgetHasLinks() ) {
-                    jQuery( '#post').submit();
                     return true;
                 } else {
                     Contextly.PopupHelper.getInstance().showPublishConfirmation();
@@ -207,7 +205,8 @@ Contextly.PageView = Contextly.createClass({
     updatePost: function () {
         var data = {
             action: 'contextly_publish_post',
-            page_id: Contextly.Settings.getInstance().getPageId()
+            page_id: Contextly.Settings.getInstance().getPageId(),
+            contextly_nonce: Contextly.Settings.getInstance().getAjaxNonce()
         };
 
         jQuery.ajax({
@@ -718,8 +717,9 @@ Contextly.SnippetWidgetTabsFormatter = Contextly.createClass({
         var html = "<ul class='horizontal-line' style='" + item_style + "'>";
 
         if ( link.thumbnail_url ) {
-            var image_li_width = this.getImagesWidth() + 8;
-            var image_html = "<img src='" + link.thumbnail_url + "' />";
+            var image_width = this.getImagesWidth();
+            var image_li_width = image_width + 8;
+            var image_html = "<img src='" + link.thumbnail_url + "' style='width: " + image_width + "px !important;' />";
 
             html += "<li style='width: " + image_li_width + "px;'>" + this.getLinkATag( link, image_html ) + "</li>";
         }
@@ -1427,6 +1427,12 @@ Contextly.Settings = Contextly.createClass({
     },
     getAjaxUrl: function () {
         return Contextly.ajax_url;
+    },
+    getAjaxNonce: function () {
+        if ( Contextly.ajax_nonce ) {
+            return Contextly.ajax_nonce;
+        }
+        return null;
     }
 });
 

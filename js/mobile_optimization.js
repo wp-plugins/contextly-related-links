@@ -8,6 +8,13 @@
         return $.fn.getWidget().attr( 'widget-type' );
     }
 
+    $.fn.classChanger = function ( widgetClass, hasClassName, addClassName) {
+		if( $( '.' + widgetClass ).hasClass( hasClassName ) ) {
+            $( '.' + widgetClass ).removeClass( hasClassName );
+        }
+		$( '.'+widgetClass ).addClass( addClassName );
+	}
+
     $.fn.responsiveResizeHandler = function () {
 
 		//branding popup
@@ -25,15 +32,9 @@
 
         if ( widgetType == 'blocks2' ) {
             if(getWidgetWidth < resizeMinLimit) {
-                $(".blocks-widget2 li").css("width", "100%");
-                $(".blocks-widget2 li").css("max-width", "100%");
-                $(".blocks-widget2 li img").css("width", "30%");
-                $(".blocks-widget2 li p").css({"width":"60%", "margin-top":0});
+                $.fn.classChanger('blocks-widget2','blocks2site', 'blocks2mobile');
             } else {
-                $(".blocks-widget2 li").css("width", "23%");
-                $(".blocks-widget2 li").css("max-width", 160);
-                $(".blocks-widget2 li img").css("width", "94%");
-                $(".blocks-widget2 li p").css({ "width":"94%", "margin-top":5});
+                $.fn.classChanger('blocks-widget2','blocks2mobile', 'blocks2site');
             }
         }
 
@@ -51,7 +52,7 @@
             }
 
             else {
-                $(".float-widget li").css({"width":"30.3%", "min-height":"190px"});
+                $(".float-widget li").css({"width":"32.3%"});
                 $(".float-widget img").css("width", "100%");
                 $(".float-widget p.link").css({ "width":"100%", "max-width":"100%", "margin-left":"0"});
             }
@@ -81,7 +82,7 @@
             });
         }
 
-        var getLeftSidebarWidth = $('.contextly-sidebar-left').width();
+        var getLeftSidebarWidth = $('.contextly-sidebar').width();
         if(getLeftSidebarWidth < 240) {
             $(".contextly-sidebar .horizontal-line li").css("float", "left");
             $("horizontal-line").css("float", "left");
