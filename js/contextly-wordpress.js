@@ -315,13 +315,17 @@ Contextly.SidebarWidgetFormatterFactory = Contextly.createClass({
     }
 });
 
+//////////////////////////////////////////////////////////////
+//                  Abstract Widget                         //
+//////////////////////////////////////////////////////////////
+
 Contextly.SnippetWidgetFormatter = Contextly.createClass({
     abstracts: [ 'getWidgetHTML', 'getWidgetCssName' ],
 
     construct: function( widget ) {
         this.widget = widget;
         this.widget_type = Contextly.WidgetType.SNIPPET;
-        this.widget_html_id = 'linker_widget';
+        this.widget_html_id = 'ctx_linker';
     },
 
     getDisplayElement: function() {
@@ -360,10 +364,9 @@ Contextly.SnippetWidgetFormatter = Contextly.createClass({
 
     display: function () {
         if ( this.hasWidgetData() ) {
-            // Build widget html and display it
-            var html = this.getWidgetHTML();
-            this.displayText( html );
+            this.displayText( this.getWidgetHTML() );
             this.loadCss();
+            this.attachVideoPopups();
 
             // Check if we need to change snippet position on page
             if ( !Contextly.Settings.getInstance().isAdmin() ) {
@@ -379,6 +382,20 @@ Contextly.SnippetWidgetFormatter = Contextly.createClass({
         if ( Contextly.Settings.getInstance().isAdmin() ) {
             this.displayAdminControls();
         }
+    },
+
+    attachVideoPopups: function () {
+        jQuery("a[rel='ctx_video_link']").each(
+            function () {
+                jQuery( this ).prettyPhoto({animation_speed:'fast',slideshow:10000, hideflash: true});
+                jQuery( this ).click(
+                    function () {
+                        var contextly_url = jQuery( this).attr( 'contextly-url' );
+                        Contextly.MainServerAjaxClient.getInstance().call( contextly_url );
+                    }
+                );
+            }
+        );
     },
 
     loadCss: function () {
@@ -413,7 +430,7 @@ Contextly.SnippetWidgetFormatter = Contextly.createClass({
     },
 
     getCustomCssCode: function () {
-        return Contextly.CssCustomBuilder.getInstance().buildCSS( '.contextly-widget', this.getSettings() );
+        return Contextly.CssCustomBuilder.getInstance().buildCSS( '.ctx_widget', this.getSettings() );
     },
 
     fixSnippetPagePosition: function () {
@@ -482,10 +499,6 @@ Contextly.SnippetWidgetFormatter = Contextly.createClass({
         return null;
     },
 
-    getDisplaySections: function () {
-        return this.getSettings().display_sections;
-    },
-
     getWidgetSectionLinks: function ( section ) {
         var widget_links = this.getWidgetLinks();
 
@@ -523,7 +536,7 @@ Contextly.SnippetWidgetFormatter = Contextly.createClass({
     },
 
     getLinkATag: function ( link, content ) {
-        return "<a target=\"_blank\" class=\"title module-contextly\" href=\"" +
+        return "<a target=\"_blank\" class=\"ctx_title ctx_module\" href=\"" +
             this.escape( link.native_url ) + "\" title=\"" +
             this.escape( link.title ) + "\" onmousedown=\"this.href='" +
             this.escape( link.url ) + "'\" " + this.getOnclickHtml( link ) + ">" +
@@ -531,7 +544,7 @@ Contextly.SnippetWidgetFormatter = Contextly.createClass({
     },
 
     getVideoLinkATag: function ( link, content ) {
-        return "<a class=\"title module-contextly\" rel=\"contextly-video-link\" href=\"" +
+        return "<a class=\"ctx_title ctx_module\" rel=\"ctx_video_link\" href=\"" +
             this.escape( link.native_url ) + "\" title=\"" +
             this.escape( link.title ) + "\" contextly-url=\"" + link.url + "\" " +
             "'\" " + this.getOnclickHtml( link ) + ">" +
@@ -548,22 +561,97 @@ Contextly.SnippetWidgetFormatter = Contextly.createClass({
 
     getLinkATagIE7Fix: function () {
         return "<!--[if lte ie 7]><b></b><![endif]-->";
+    },
+
+    getLinkHTML: function ( link ) {
+        if ( link.video ) {
+            return this.getLinkHTMLVideo( link );
+        } else {
+            return this.getLinkHTMLNormal( link );
+        }
+    },
+
+    getInnerLinkHTML: function ( link ) {
+        return link.title;
+    },
+
+    getLinkHTMLVideo: function ( link ) {
+        return "<li>" + this.getVideoLinkATag( link, this.getInnerLinkHTML( link ) ) + "</li>";
+    },
+
+    getLinkHTMLNormal: function ( link ) {
+        return "<li>" + this.getLinkATag( link, this.getInnerLinkHTML( link ) ) + "</li>";
+    },
+
+    getBrandingHtml: function() {
+        var html = "<a href='#ctx_branding_content' id='ctx_branding_open' class=\"ctx_pluginauthor ctx_modal_open\"><span>Powered by</span></a>";
+        html += "<div id='ctx_branding_content' style=\"display:none;margin:1em;\"><div id=\"ctx_modal\" class=\"ctx_well\">";
+        html += "<div id='ctx_popupcontainer'>";
+        html += "<span id=\"ctx_poplogo\"></span><span id='ctx_popupperbg'></span><div id='ctx_poptext'>";
+        html += "Contextly recommends interesting and related stories using a unique combination of algorithms and editorial choices.<br><br>";
+        html += "Publishers or advertisers who would like to learn more about Contextly can contact us&nbsp;";
+        html += "<a href=\"http://contextly.com/sign-up/publishers/\" target=\"_blank\">here</a>.<br><br>";
+        html += "We respect ";
+        html += "<a href=\"http://contextly.com/privacy/\" target=\"_blank\">readers' privacy </a>.&nbsp;";
+        html += "</div></div>";
+        html += "<span id='ctx_popsymbol'></span>";
+        html += "</div></div>";
+
+        return html;
+    },
+
+    isDisplayContextlyLogo: function() {
+        return Contextly.Settings.getInstance().isDisplayBranding();
     }
 
 });
+
+Contextly.CssCustomBuilder = Contextly.createClass({
+    extend: Contextly.Singleton,
+
+    buildCSSRule: function( entry, prefix, property, value ) {
+        if ( !value ) return "";
+        return entry + " " + prefix + " {" + property + ": " + Contextly.Utils.getInstance().escape( value ) + "}";
+    },
+
+    hex2Vals: function( hex ) {
+        if(hex.charAt(0) == "#") hex = hex.slice(1);
+        hex = hex.toUpperCase();
+        var hex_alphabets = "0123456789ABCDEF";
+        var value = new Array(3);
+        var k = 0;
+        var int1,int2;
+
+        for( var i=0;i<6;i+=2 ) {
+            int1 = hex_alphabets.indexOf(hex.charAt(i));
+            int2 = hex_alphabets.indexOf(hex.charAt(i+1));
+            value[k] = (int1 * 16) + int2;
+            k++;
+        }
+
+        return(value);
+    }
+});
+
+//////////////////////////////////////////////////////////////
+//                      Text Widget                         //
+//////////////////////////////////////////////////////////////
 
 Contextly.SnippetWidgetTextFormatter = Contextly.createClass({
     extend: Contextly.SnippetWidgetFormatter,
 
     getWidgetCssName: function () {
-        return 'text-widget';
+        return 'ctx_text_widget';
     },
 
     getWidgetHTML: function () {
         var div = "";
-        var value;
 
-        div += "<div class='contextly_see_also " + this.getWidgetCssName() + "'>";
+        if ( this.isDisplayContextlyLogo() ) {
+            div += "<div class='ctx_branding'>" + this.getBrandingHtml() + "</div>";
+        }
+
+        div += "<div class='ctx_see_also " + this.getWidgetCssName() + "'>";
 
         var sections = this.widget.settings.display_sections;
 
@@ -573,9 +661,9 @@ Contextly.SnippetWidgetTextFormatter = Contextly.createClass({
                 var section_key = section_name + '_subhead';
                 var section_header = this.widget.settings[ section_key ];
 
-                div += "<div class='contextly_previous'>";
-                div += "<div class='contextly_subhead'><span class='contextly_subhead_title'>" + this.escape( section_header ) + "</span><span class='contextly_subhead_line'></span></div>";
-                div += "<ul class='link'>" + this.getLinksHTMLOfType( section_name ) + "</ul>";
+                div += "<div class='ctx_previous'>";
+                div += "<div class='ctx_subhead'><span class='ctx_subhead_title'>" + this.escape( section_header ) + "</span><span class='ctx_subhead_line'></span></div>";
+                div += "<ul class='ctx_link'>" + this.getLinksHTMLOfType( section_name ) + "</ul>";
                 div += "</div>";
             }
         }
@@ -584,13 +672,7 @@ Contextly.SnippetWidgetTextFormatter = Contextly.createClass({
         return div;
     },
 
-    getLinkHTML: function ( link )
-    {
-        return "<li>" + this.getLinkATag( link, link.title ) + "</li>";
-    },
-
-    getLinksHTMLOfType: function( type )
-    {
+    getLinksHTMLOfType: function( type ) {
         var html = "";
         var widget = this.widget;
 
@@ -608,24 +690,49 @@ Contextly.SnippetWidgetTextFormatter = Contextly.createClass({
     },
 
     getCustomCssCode: function () {
-        return Contextly.TextWidgetCssCustomBuilder.getInstance().buildCSS( '.contextly-widget', this.getSettings() );
+        return Contextly.TextWidgetCssCustomBuilder.getInstance().buildCSS( '.ctx_widget', this.getSettings() );
     }
 
 });
+
+Contextly.TextWidgetCssCustomBuilder = Contextly.createClass({
+    extend: [ Contextly.CssCustomBuilder, Contextly.Singleton ],
+
+    buildCSS: function ( entry, settings ) {
+        var css_code = "";
+
+        if ( settings.css_code ) css_code += '.ctx_text_widget ' + Contextly.Utils.getInstance().escape( settings.css_code );
+        if ( settings.font_family ) css_code += this.buildCSSRule( entry, ".ctx_text_widget .ctx_link" , "font-family", settings.font_family );
+        if ( settings.font_size ) css_code += this.buildCSSRule( entry, ".ctx_text_widget .ctx_link" , "font-size", settings.font_size );
+        if ( settings.color_links ) {
+            css_code += this.buildCSSRule( entry, ".ctx_text_widget a.ctx_title" , "color", settings.color_links );
+        }
+        if ( settings.color_background ) {
+            css_code += this.buildCSSRule( entry, ".ctx_text_widget .ctx_subhead" , "background-color", settings.color_background );
+        }
+
+        return css_code;
+    }
+
+});
+
+//////////////////////////////////////////////////////////////
+//                      Tabs Widget                         //
+//////////////////////////////////////////////////////////////
 
 Contextly.SnippetWidgetTabsFormatter = Contextly.createClass({
     extend: Contextly.SnippetWidgetFormatter,
 
     getWidgetCssName: function () {
-        return 'tabs-widget';
+        return 'ctx_tabs_widget';
     },
 
     getWidgetHTML: function () {
-        var div = "<div class='contextly_see_also " + this.getWidgetCssName() + "'>";
+        var div = "<div class='ctx_see_also " + this.getWidgetCssName() + "'>";
 
         var sections = this.widget.settings.display_sections;
 
-        div += "<ul class=\"linker_tabs\">";
+        div += "<ul class=\"ctx_tabs\">";
         var active_flag = false;
 
         for ( var section in sections ) {
@@ -635,7 +742,7 @@ Contextly.SnippetWidgetTabsFormatter = Contextly.createClass({
                 var section_key = section_name + '_subhead';
                 var section_header = this.widget.settings[ section_key ];
 
-                div += "<li id='linker_tab_" + section_name + "' " + (!active_flag ? "class='active'" : "") + ">";
+                div += "<li id='ctx_linker_tab_" + section_name + "' " + (!active_flag ? "class='active'" : "") + ">";
                 div += "<a href='javascript:;' onclick='Contextly.PageEvents.getInstance().switchTab(\"" + this.widget.settings.id + "\", \"" + section_name + "\")'><span>" + this.escape( section_header ) + "</span></a>";
                 div += "</li>";
                 active_flag = true;
@@ -643,24 +750,7 @@ Contextly.SnippetWidgetTabsFormatter = Contextly.createClass({
         }
 
         if ( this.isDisplayContextlyLogo() ) {
-            /*div += "<li><span class='contextly_related'><a href='http://contextly.com'>Related Links by Contextly</a></span></li>";*/
-
-		div += "<li>";/*branding popup*/
-		div += "<div class=\"pluginauthor my_modal_open\"><span>Powered by</span></div>";
-		div += "<div id=\"my_modal\" class=\"well\" style=\"display:none;margin:1em;\">";
-		div += "<a href=\"#\" class=\"my_modal_close\" ></a>";
-		div += "<div id='brandpopupcontainer'>";
-		div += "<span id=\"brandpoplogo\"></span><span id='brandpopupperbg'></span><div id='brandpoptext'>";
-		div += "Contextly recommends interesting and related stories using a unique combination of algorithms and editorial choices.<br><br>";
-		div += "Publishers or advertisers who would like to learn more about Contextly can contact us&nbsp;";
-		div += "<a href=\"http://contextly.com/sign-up/publishers/\" target=\"_blank\">here</a>.<br><br>";
-		div += "We respect ";
-		div += "<a href=\"http://contextly.com/privacy/\" target=\"_blank\">readers' privacy </a>.&nbsp;";
-		div += "</div></div>";
-		div += "<span id='brandpopsymbol'></span>";
-		div += "</div>";/*branding popup*/
-		div += "</li>";
-
+    		div += "<li class='ctx_branding'>" + this.getBrandingHtml() + "</li>";
         }
 
         div += "</ul>";
@@ -669,8 +759,8 @@ Contextly.SnippetWidgetTabsFormatter = Contextly.createClass({
         for (var section in sections) {
             var section_name = sections[section];
             if ( this.isDisplaySection( section_name ) ) {
-                div += "<div id='linker_content_" + section_name + "' class='linker_content' " + (!active_flag ? "style='display: block;'" :"") + ">"
-                    + "<ul class='link " + ( this.hasImagesForLinks( section_name ) ? 'linker_images' : '' ) + " '>"
+                div += "<div id='ctx_linker_content_" + section_name + "' class='ctx_content' " + (!active_flag ? "style='display: block;'" :"") + ">"
+                    + "<ul class='ctx_link " + ( this.hasImagesForLinks( section_name ) ? 'linker_images' : '' ) + " '>"
                     + this.getLinksHTMLOfType( section_name )
                     + "</ul>"
                     + "</div>";
@@ -714,7 +804,7 @@ Contextly.SnippetWidgetTabsFormatter = Contextly.createClass({
             item_style += "height: " + this.getImagesHeight() + "px;";
         }
 
-        var html = "<ul class='horizontal-line' style='" + item_style + "'>";
+        var html = "<ul class='ctx_horizontal_line' style='" + item_style + "'>";
 
         if ( link.thumbnail_url ) {
             var image_width = this.getImagesWidth();
@@ -724,7 +814,11 @@ Contextly.SnippetWidgetTabsFormatter = Contextly.createClass({
             html += "<li style='width: " + image_li_width + "px;'>" + this.getLinkATag( link, image_html ) + "</li>";
         }
 
-        html += "<li>" + this.getLinkATag( link, link.title ) + "</a>";
+        if ( link.video ) {
+            html += "<li>" + this.getVideoLinkATag( link, link.title ) + "</a>";
+        } else {
+            html += "<li>" + this.getLinkATag( link, link.title ) + "</a>";
+        }
 
         if ( this.widget.settings.display_link_dates && link.publish_date ) {
             html += " <span class='link-pub-date'>" + Contextly.Utils.getInstance().dateTextDiff( link.publish_date ) + "</span>";
@@ -744,16 +838,51 @@ Contextly.SnippetWidgetTabsFormatter = Contextly.createClass({
         if ( this.widget.links[ type ].length == img_count ) return true;
     },
 
-    isDisplayContextlyLogo: function() {
-        return !Contextly.Settings.getInstance().isAdmin() && !this.isMobileRequest();
-    },
-
-    isMobileRequest: function() {
-        return false;
+    getCustomCssCode: function () {
+        return Contextly.TabsWidgetCssCustomBuilder.getInstance().buildCSS( '.ctx_widget', this.getSettings() );
     }
 
 });
 
+Contextly.TabsWidgetCssCustomBuilder = Contextly.createClass({
+    extend: [ Contextly.CssCustomBuilder, Contextly.Singleton ],
+
+    buildCSS: function ( entry, settings )
+    {
+        var css_code = "";
+
+        if ( settings.css_code ) css_code += '.ctx_text_widget ' + Contextly.Utils.getInstance().escape( settings.css_code );
+
+        if ( settings.font_family ) css_code += this.buildCSSRule( entry, ".ctx_tabs_widget .ctx_link" , "font-family", settings.font_family );
+        if ( settings.font_size ) css_code += this.buildCSSRule( entry, ".ctx_tabs_widget .ctx_link" , "font-size", settings.font_size );
+
+        if ( settings.color_background ) {
+            css_code += this.buildCSSRule( entry, ".ctx_tabs_widget .ctx_content" , "background-color", settings.color_background );
+            css_code += this.buildCSSRule( entry, ".ctx_tabs_widget .ctx_images img" , "border-color", settings.color_background );
+        }
+
+        if ( settings.color_links ) {
+            css_code += this.buildCSSRule( entry, ".ctx_tabs_widget .ctx_content li a" , "color", settings.color_links );
+            css_code += this.buildCSSRule( entry, ".ctx_tabs_widget .ctx_content span" , "color", settings.color_links );
+        }
+
+        if ( settings.color_border ) {
+            css_code += this.buildCSSRule( entry, ".ctx_tabs_widget .ctx_content" , "border-color", settings.color_border );
+            css_code += this.buildCSSRule( entry, ".ctx_tabs_widget .ctx_tabs li.active span" , "border-color", settings.color_border );
+            css_code += this.buildCSSRule( entry, ".ctx_tabs_widget .ctx_tabs span" , "border-color", settings.color_border );
+        }
+
+        if ( settings.color_active_tab ) css_code += this.buildCSSRule( entry, ".ctx_tabs_widget .ctx_tabs li.active span" , "background", settings.color_active_tab );
+
+        if ( settings.color_inactive_tab ) css_code += this.buildCSSRule( entry, ".ctx_tabs_widget .ctx_tabs span" , "background", settings.color_inactive_tab );
+
+        return css_code;
+    }
+});
+
+//////////////////////////////////////////////////////////////
+//                    Blocks Widget                         //
+//////////////////////////////////////////////////////////////
 Contextly.SnippetWidgetBlocksFormatter = Contextly.createClass({
     extend: Contextly.SnippetWidgetTextFormatter,
 
@@ -782,18 +911,17 @@ Contextly.SnippetWidgetBlocksFormatter = Contextly.createClass({
     },
 
     getWidgetCssName: function () {
-        return 'blocks-widget';
+        return 'ctx_blocks_widget';
     },
 
     getWidgetHTML: function () {
         var div = "";
-        var value;
 
-        div += "<div class='contextly_see_also " + this.getWidgetCssName() +"'>";
+        div += "<div class='ctx_see_also " + this.getWidgetCssName() +"'>";
 
         var sections = this.widget.settings.display_sections;
 
-        div += "<div class='contextly_around_site'>";
+        div += "<div class='ctx_around_site'>";
         for ( var section in sections ) {
             var section_name = sections[section];
 
@@ -801,31 +929,17 @@ Contextly.SnippetWidgetBlocksFormatter = Contextly.createClass({
                 var section_key = section_name + '_subhead';
                 var section_header = this.widget.settings[ section_key ];
 
-                div += "<div class='contextly_previous'>";
-                div += "<div class='contextly_subhead'><span class='contextly_subhead_title'>" + this.escape( section_header ) + "</span><span class='contextly_subhead_line'></span></div>";
-                div += "<ul class='link'>" + this.getLinksHTMLOfType( section_name ) + "</ul>";
+                div += "<div class='ctx_previous'>";
+                div += "<div class='ctx_subhead'><span class='ctx_subhead_title'>" + this.escape( section_header ) + "</span></div>";
+                div += "<ul class='ctx_link'>" + this.getLinksHTMLOfType( section_name ) + "</ul>";
                 div += "</div>";
             }
         }
         div += "</div>";
 
-		/*branding popup*/
-
-		div += "<div class=\"pluginauthor my_modal_open\"><span>Powered by</span></div>";
-		div += "<div id=\"my_modal\" class=\"well\" style=\"display:none;margin:1em;\">";
-		div += "<a href=\"#\" class=\"my_modal_close\" ></a>";
-		div += "<div id='brandpopupcontainer'>";
-		div += "<span id=\"brandpoplogo\"></span><span id='brandpopupperbg'></span><div id='brandpoptext'>";
-		div += "Contextly recommends interesting and related stories using a unique combination of algorithms and editorial choices.<br><br>";
-		div += "Publishers or advertisers who would like to learn more about Contextly can contact us&nbsp;";
-		div += "<a href=\"http://contextly.com/sign-up/publishers/\" target=\"_blank\">here</a>.<br><br>";
-		div += "We respect ";
-		div += "<a href=\"http://contextly.com/privacy/\" target=\"_blank\">readers' privacy </a>.&nbsp;";
-		div += "</div></div>";
-		div += "<span id='brandpopsymbol'></span>";
-		div += "</div>";
-
-		/*branding popup*/
+        if ( this.isDisplayContextlyLogo() ) {
+            div += "<div class='ctx_branding'>" + this.getBrandingHtml() + "</div>";
+        }
 
         return div;
     },
@@ -839,7 +953,7 @@ Contextly.SnippetWidgetBlocksFormatter = Contextly.createClass({
     },
 
     getInnerLinkHTML: function ( link ) {
-        var inner_html = "<p class='link'><span>" + link.title + "</span></p>";
+        var inner_html = "<p class='ctx_link'><span>" + link.title + "</span></p>";
         if ( this.getLinkThumbnailUrl( link ) ) {
             inner_html += "<img src='" + link.thumbnail_url + "' />";
         }
@@ -856,38 +970,56 @@ Contextly.SnippetWidgetBlocksFormatter = Contextly.createClass({
     },
 
     getCustomCssCode: function () {
-        return Contextly.BlocksWidgetCssCustomBuilder.getInstance().buildCSS( '.contextly-widget', this.getSettings() );
-    },
-
-    display: function () {
-        Contextly.SnippetWidgetTextFormatter.fn.display.call( this );
-
-        if ( this.hasWidgetData() ) {
-            this.attachVideoPopups();
-        }
-    },
-
-    attachVideoPopups: function () {
-        jQuery("a[rel='contextly-video-link']").each(
-            function () {
-                jQuery( this ).prettyPhoto({animation_speed:'fast',slideshow:10000, hideflash: true});
-                jQuery( this ).click(
-                    function () {
-                        var contextly_url = jQuery( this).attr( 'contextly-url' );
-                        Contextly.MainServerAjaxClient.getInstance().call( contextly_url );
-                    }
-                );
-            }
-        );
+        return Contextly.BlocksWidgetCssCustomBuilder.getInstance().buildCSS( '.ctx_widget', this.getSettings() );
     }
 
 });
 
+Contextly.BlocksWidgetCssCustomBuilder = Contextly.createClass({
+    extend: [ Contextly.CssCustomBuilder, Contextly.Singleton ],
+
+    buildCSS: function ( entry, settings )
+    {
+        var css_code = "";
+
+        if ( settings.css_code ) css_code += '.ctx_blocks_widget ' + Contextly.Utils.getInstance().escape( settings.css_code );
+
+        if ( settings.font_family ) css_code += this.buildCSSRule( entry, ".ctx_blocks_widget p.ctx_link" , "font-family", settings.font_family );
+        if ( settings.font_size ) css_code += this.buildCSSRule( entry, ".ctx_blocks_widget p.ctx_link" , "font-size", settings.font_size );
+
+        if ( settings.color_links ) {
+            css_code += this.buildCSSRule( entry, ".ctx_blocks_widget .ctx_link span" , "color", settings.color_links );
+        }
+
+        if ( settings.color_background ) {
+            css_code += this.buildCSSRule( entry, ".ctx_blocks_widget .ctx_subhead" , "background-color", settings.color_background );
+        }
+
+        if ( settings.color_border ) {
+            var color_border = settings.color_border;
+            var rgb = this.hex2Vals( color_border );
+
+            if ( rgb.length == 3 ) {
+                var r = rgb[0];
+                var g = rgb[1];
+                var b = rgb[2];
+
+                css_code += this.buildCSSRule( entry, ".ctx_blocks_widget li p" , "background", "rgba("+r+","+g+","+b+",0.5)" );
+            }
+        }
+
+        return css_code;
+    }
+});
+
+//////////////////////////////////////////////////////////////
+//                   Blocks2 Widget                         //
+//////////////////////////////////////////////////////////////
 Contextly.SnippetWidgetBlocks2Formatter = Contextly.createClass({
     extend: Contextly.SnippetWidgetBlocksFormatter,
 
     getWidgetCssName: function () {
-        return 'blocks-widget2';
+        return 'ctx_blocks_widget2';
     },
 
     getInnerLinkHTML: function ( link, is_video ) {
@@ -901,23 +1033,54 @@ Contextly.SnippetWidgetBlocks2Formatter = Contextly.createClass({
                 inner_html += "</div>";
             }
         }
-        inner_html += "<p class='link'><span>" + link.title + "</span></p>";
+        inner_html += "<p class='ctx_link'><span>" + link.title + "</span></p>";
 
         return inner_html;
     },
 
     getLinkHTMLVideo: function ( link ) {
         return "<li>" + this.getVideoLinkATag( link, this.getInnerLinkHTML( link, true ) ) + "</li>";
+    },
+
+    getCustomCssCode: function () {
+        return Contextly.Blocks2WidgetCssCustomBuilder.getInstance().buildCSS( '.ctx_widget', this.getSettings() );
     }
 
 });
 
+Contextly.Blocks2WidgetCssCustomBuilder = Contextly.createClass({
+    extend: [ Contextly.CssCustomBuilder, Contextly.Singleton ],
 
+    buildCSS: function ( entry, settings )
+    {
+        var css_code = "";
+
+        if ( settings.css_code ) css_code += '.ctx_blocks2_widget ' + Contextly.Utils.getInstance().escape( settings.css_code );
+
+        if ( settings.font_family ) css_code += this.buildCSSRule( entry, ".ctx_blocks_widget2 p.ctx_link" , "font-family", settings.font_family );
+        if ( settings.font_size ) css_code += this.buildCSSRule( entry, ".ctx_blocks_widget2 p.ctx_link" , "font-size", settings.font_size );
+
+        if ( settings.color_links ) {
+            css_code += this.buildCSSRule( entry, ".ctx_blocks_widget2 .ctx_link span" , "color", settings.color_links );
+        }
+
+        if ( settings.color_background ) {
+            css_code += this.buildCSSRule( entry, ".ctx_blocks_widget2 .ctx_subhead" , "background-color", settings.color_background );
+        }
+
+        return css_code;
+    }
+});
+
+
+//////////////////////////////////////////////////////////////
+//                   Float Widget                           //
+//////////////////////////////////////////////////////////////
 Contextly.SnippetWidgetFloatFormatter = Contextly.createClass({
     extend: Contextly.SnippetWidgetBlocksFormatter,
 
     getWidgetCssName: function () {
-        return 'float-widget';
+        return 'ctx_float_widget';
     },
 
     getNumberOfLinksPerSection: function () {
@@ -937,7 +1100,7 @@ Contextly.SnippetWidgetFloatFormatter = Contextly.createClass({
         }
 
         var text_width = this.getImagesWidth() + 10;
-        inner_html += "<p class='link' style='width: " + text_width + "px;'><span>" + link.title + "</span></p>";
+        inner_html += "<p class='ctx_link' style='width: " + text_width + "px;'><span>" + link.title + "</span></p>";
 
         return inner_html;
     },
@@ -947,11 +1110,37 @@ Contextly.SnippetWidgetFloatFormatter = Contextly.createClass({
     },
 
     getCustomCssCode: function () {
-        return Contextly.FloatWidgetCssCustomBuilder.getInstance().buildCSS( '.contextly-widget', this.getSettings() );
+        return Contextly.FloatWidgetCssCustomBuilder.getInstance().buildCSS( '.ctx_widget', this.getSettings() );
     }
 
 });
 
+Contextly.FloatWidgetCssCustomBuilder = Contextly.createClass({
+    extend: [ Contextly.CssCustomBuilder, Contextly.Singleton ],
+
+    buildCSS: function ( entry, settings ) {
+        var css_code = "";
+        if ( settings.css_code ) css_code += '.ctx_float_widget ' + Contextly.Utils.getInstance().escape( settings.css_code );
+
+        if ( settings.font_family ) css_code += this.buildCSSRule( entry, ".ctx_float_widget .ctx_link" , "font-family", settings.font_family );
+        if ( settings.font_size ) css_code += this.buildCSSRule( entry, ".ctx_float_widget .ctx_link" , "font-size", settings.font_size );
+
+        if ( settings.color_links ) {
+            css_code += this.buildCSSRule( entry, ".ctx_float_widget .ctx_link span" , "color", settings.color_links );
+        }
+
+        if ( settings.color_background ) {
+            css_code += this.buildCSSRule( entry, ".ctx_float_widget .ctx_subhead" , "background-color", settings.color_background );
+        }
+
+        return css_code;
+    }
+
+});
+
+//////////////////////////////////////////////////////////////
+//                   Sidebar Widget                         //
+//////////////////////////////////////////////////////////////
 Contextly.SidebarWidgetFormatter = Contextly.createClass({
     extend: Contextly.SnippetWidgetTabsFormatter,
 
@@ -965,7 +1154,7 @@ Contextly.SidebarWidgetFormatter = Contextly.createClass({
 
     getWidgetHTML: function()
     {
-        return "<div class='linker_content'><ul class='link " + ( this.hasImagesForLinks( 'previous' ) ? 'linker_images' : '' ) + " '>"
+        return "<div class='ctx_content'><ul class='ctx_sidebar_link " + ( this.hasImagesForLinks( 'previous' ) ? 'ctx_images' : '' ) + " '>"
             + this.getLinksHTMLOfType( 'previous' )
             + "</ul></div>";
     },
@@ -996,18 +1185,17 @@ Contextly.SidebarWidgetFormatter = Contextly.createClass({
                     self.displayText( html );
 
                     // Do some sidebar modifications
-                    self.getDisplayElement().removeClass( 'contextly-sidebar-hidden' )
-                        .addClass( 'contextly-sidebar' )
-                        .addClass( 'contextly-sidebar-' + self.widget.layout )
-                        .addClass( 'contextly-widget');
+                    self.getDisplayElement().removeClass( 'ctx_sidebar_hidden' )
+                        .addClass( 'ctx_sidebar' )
+                        .addClass( 'ctx_sidebar_' + self.widget.layout );
 
                     // Check if we need to add sidebar title and description
                     var title = self.widget.name;
                     var description = self.widget.description;
-                    var sidebar_content = self.getDisplayElement().find( '.linker_content' );
+                    var sidebar_content = self.getDisplayElement().find( '.ctx_content' );
 
-                    if ( description ) sidebar_content.prepend( "<div class='description'>" + self.escape( description ) + "</div>" );
-                    if ( title ) sidebar_content.prepend( "<div class='title'>" + self.escape( title ) + "</div>" );
+                    if ( description ) sidebar_content.prepend( "<div class='ctx_sidebar_description'>" + self.escape( description ) + "</div>" );
+                    if ( title ) sidebar_content.prepend( "<div class='ctx_sidebar_title'>" + self.escape( title ) + "</div>" );
 
                     self.loadCss();
                 }
@@ -1030,150 +1218,7 @@ Contextly.SidebarWidgetFormatter = Contextly.createClass({
     },
 
     getCustomCssCode: function () {
-        return Contextly.SidebarWidgetCssCustomBuilder.getInstance().buildCSS( '.contextly-sidebar', this.getSettings() );
-    }
-
-});
-
-Contextly.CssCustomBuilder = Contextly.createClass({
-    extend: Contextly.Singleton,
-
-    buildCSS: function ( entry, settings )
-    {
-        var css_code = "";
-
-        if ( settings.css_code ) css_code += '#linker_widget ' + Contextly.Utils.getInstance().escape( settings.css_code );
-
-        if ( settings.font_family ) css_code += this.buildCSSRule( entry, ".link" , "font-family", settings.font_family );
-        if ( settings.font_size ) css_code += this.buildCSSRule( entry, ".link" , "font-size", settings.font_size );
-
-        if ( settings.color_background ) {
-            css_code += this.buildCSSRule( entry, ".linker_content" , "background-color", settings.color_background );
-            css_code += this.buildCSSRule( entry, ".linker_images img" , "border-color", settings.color_background );
-        }
-
-        if ( settings.color_links ) {
-            css_code += this.buildCSSRule( entry, ".linker_content a" , "color", settings.color_links );
-            css_code += this.buildCSSRule( entry, ".linker_content span" , "color", settings.color_links );
-        }
-
-        if ( settings.color_border ) {
-            css_code += this.buildCSSRule( entry, ".linker_content" , "border-color", settings.color_border );
-            css_code += this.buildCSSRule( entry, ".linker_tabs li.active span" , "border-color", settings.color_border );
-            css_code += this.buildCSSRule( entry, ".linker_tabs span" , "border-color", settings.color_border );
-        }
-
-        if ( settings.color_active_tab ) css_code += this.buildCSSRule( entry, ".linker_tabs li.active span" , "background", settings.color_active_tab );
-
-        if ( settings.color_inactive_tab ) css_code += this.buildCSSRule( entry, ".linker_tabs span" , "background", settings.color_inactive_tab );
-
-        return css_code;
-    },
-
-    buildCSSRule: function( entry, prefix, property, value ) {
-        if ( !value ) return "";
-        return entry + " " + prefix + " {" + property + ": " + Contextly.Utils.getInstance().escape( value ) + "}";
-    },
-
-    hex2Vals: function( hex ) {
-        if(hex.charAt(0) == "#") hex = hex.slice(1);
-        hex = hex.toUpperCase();
-        var hex_alphabets = "0123456789ABCDEF";
-        var value = new Array(3);
-        var k = 0;
-        var int1,int2;
-
-        for( var i=0;i<6;i+=2 ) {
-            int1 = hex_alphabets.indexOf(hex.charAt(i));
-            int2 = hex_alphabets.indexOf(hex.charAt(i+1));
-            value[k] = (int1 * 16) + int2;
-            k++;
-        }
-
-        return(value);
-    }
-});
-
-Contextly.TextWidgetCssCustomBuilder = Contextly.createClass({
-    extend: [ Contextly.CssCustomBuilder, Contextly.Singleton ],
-
-    buildCSS: function ( entry, settings )
-    {
-        var css_code = "";
-
-        if ( settings.css_code ) css_code += '#linker_widget ' + Contextly.Utils.getInstance().escape( settings.css_code );
-
-        if ( settings.font_family ) css_code += this.buildCSSRule( entry, ".link" , "font-family", settings.font_family );
-        if ( settings.font_size ) css_code += this.buildCSSRule( entry, ".link" , "font-size", settings.font_size );
-
-        if ( settings.color_links ) {
-            css_code += this.buildCSSRule( entry, "a.title" , "color", settings.color_links );
-        }
-
-        if ( settings.color_background ) {
-            css_code += this.buildCSSRule( entry, ".contextly_subhead" , "background-color", settings.color_background );
-        }
-
-        return css_code;
-    }
-
-});
-
-Contextly.BlocksWidgetCssCustomBuilder = Contextly.createClass({
-    extend: [ Contextly.CssCustomBuilder, Contextly.Singleton ],
-
-    buildCSS: function ( entry, settings )
-    {
-        var css_code = "";
-
-        if ( settings.css_code ) css_code += '#linker_widget ' + Contextly.Utils.getInstance().escape( settings.css_code );
-
-        if ( settings.font_family ) css_code += this.buildCSSRule( entry, ".link" , "font-family", settings.font_family );
-        if ( settings.font_size ) css_code += this.buildCSSRule( entry, ".link" , "font-size", settings.font_size );
-
-        if ( settings.color_links ) {
-            css_code += this.buildCSSRule( entry, ".link span" , "color", settings.color_links );
-        }
-
-        if ( settings.color_background ) {
-            css_code += this.buildCSSRule( entry, ".contextly_subhead" , "background-color", settings.color_background );
-        }
-
-        if ( settings.color_border ) {
-            var color_border = settings.color_border;
-            var rgb = this.hex2Vals( color_border );
-
-            if ( rgb.length == 3 ) {
-                var r = rgb[0];
-                var g = rgb[1];
-                var b = rgb[2];
-
-                css_code += this.buildCSSRule( entry, ".blocks-widget li p" , "background", "rgba("+r+","+g+","+b+",0.5)" );
-            }
-        }
-
-        return css_code;
-    }
-
-});
-
-Contextly.FloatWidgetCssCustomBuilder = Contextly.createClass({
-    extend: [ Contextly.CssCustomBuilder, Contextly.Singleton ],
-
-    buildCSS: function ( entry, settings )
-    {
-        var css_code = "";
-
-        if ( settings.css_code ) css_code += '#linker_widget ' + Contextly.Utils.getInstance().escape( settings.css_code );
-
-        if ( settings.font_family ) css_code += this.buildCSSRule( entry, ".link" , "font-family", settings.font_family );
-        if ( settings.font_size ) css_code += this.buildCSSRule( entry, ".link" , "font-size", settings.font_size );
-
-        if ( settings.color_links ) {
-            css_code += this.buildCSSRule( entry, ".link span" , "color", settings.color_links );
-        }
-
-        return css_code;
+        return Contextly.SidebarWidgetCssCustomBuilder.getInstance().buildCSS( '.ctx_sidebar', this.getSettings() );
     }
 
 });
@@ -1181,36 +1226,32 @@ Contextly.FloatWidgetCssCustomBuilder = Contextly.createClass({
 Contextly.SidebarWidgetCssCustomBuilder = Contextly.createClass({
     extend: [ Contextly.CssCustomBuilder, Contextly.Singleton ],
 
-    buildCSS: function ( entry, settings )
-    {
+    buildCSS: function ( entry, settings ) {
         var css_code = "";
-
         if ( settings.css_code ) {
             var site_custom_code = Contextly.Utils.getInstance().escape( settings.css_code );
-            if ( site_custom_code.indexOf( '.contextly-sidebar' ) == -1 ) {
-                site_custom_code += '.contextly-sidebar ' + site_custom_code;
+            if ( site_custom_code.indexOf( entry ) == -1 ) {
+                site_custom_code += entry + site_custom_code;
             }
 
             css_code += site_custom_code;
         }
 
-        if ( settings.font_family ) css_code += this.buildCSSRule( entry, "a.title" , "font-family", settings.font_family );
-        if ( settings.font_size ) css_code += this.buildCSSRule( entry, "a.title" , "font-size", settings.font_size );
+        if ( settings.font_family ) css_code += this.buildCSSRule( entry, "a.ctx_title" , "font-family", settings.font_family );
+        if ( settings.font_size ) css_code += this.buildCSSRule( entry, "a.ctx_title" , "font-size", settings.font_size );
 
         if ( settings.color_background ) {
-            css_code += this.buildCSSRule( entry, ".linker_content" , "background-color", settings.color_background );
-            css_code += this.buildCSSRule( entry, ".linker_images img" , "border-color", settings.color_background );
+            css_code += this.buildCSSRule( entry, ".ctx_content" , "background-color", settings.color_background );
+            css_code += this.buildCSSRule( entry, ".ctx_images img" , "border-color", settings.color_background );
         }
 
         if ( settings.color_links ) {
-            css_code += this.buildCSSRule( entry, ".linker_content a" , "color", settings.color_links );
-            css_code += this.buildCSSRule( entry, ".linker_content span" , "color", settings.color_links );
+            css_code += this.buildCSSRule( entry, ".ctx_content .ctx_title" , "color", settings.color_links );
+            css_code += this.buildCSSRule( entry, ".ctx_content span" , "color", settings.color_links );
         }
 
         if ( settings.color_border ) {
-            css_code += this.buildCSSRule( entry, ".linker_content" , "border-color", settings.color_border );
-            css_code += this.buildCSSRule( entry, ".linker_tabs li.active span" , "border-color", settings.color_border );
-            css_code += this.buildCSSRule( entry, ".linker_tabs span" , "border-color", settings.color_border );
+            css_code += this.buildCSSRule( entry, ".ctx_content" , "border-color", settings.color_border + " !important;" );
         }
 
         return css_code;
@@ -1314,10 +1355,10 @@ Contextly.PageEvents = Contextly.createClass({
     extend: Contextly.Singleton,
 
     switchTab: function ( setting_id, tab ) {
-        jQuery("#linker_content_previous,#linker_content_web,#linker_content_interesting,#linker_content_custom").hide();
-        jQuery("#linker_tab_previous,#linker_tab_web,#linker_tab_interesting,#linker_tab_custom").attr( "class", "" );
-        jQuery("#linker_content_" + tab).show();
-        jQuery("#linker_tab_" + tab).attr( "class", "active" );
+        jQuery("#ctx_linker_content_previous,#ctx_linker_content_web,#ctx_linker_content_interesting,#ctx_linker_content_custom").hide();
+        jQuery("#ctx_linker_tab_previous,#ctx_linker_tab_web,#ctx_linker_tab_interesting,#ctx_linker_tab_custom").attr( "class", "" );
+        jQuery("#ctx_linker_content_" + tab).show();
+        jQuery("#ctx_linker_tab_" + tab).attr( "class", "active" );
 
         Contextly.Loader.getInstance().trackPageEvent( setting_id, "switch_tab", tab );
     },
@@ -1433,6 +1474,9 @@ Contextly.Settings = Contextly.createClass({
             return Contextly.ajax_nonce;
         }
         return null;
+    },
+    isDisplayBranding: function () {
+        return true;
     }
 });
 
