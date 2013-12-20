@@ -395,7 +395,6 @@ Contextly.SnippetWidgetFormatter = Contextly.createClass({
         if ( this.hasWidgetData() ) {
             this.displayText( this.getWidgetHTML() );
             this.loadCss();
-            this.attachVideoPopups();
 
             // Check if we need to change snippet position on page
             if ( !Contextly.Settings.getInstance().isAdmin() ) {
@@ -406,6 +405,8 @@ Contextly.SnippetWidgetFormatter = Contextly.createClass({
             if ( settings && settings.display_type ) {
                 this.getDisplayElement().attr( 'widget-type', settings.display_type );
             }
+
+            this.attachVideoPopups();
         }
 
         if ( Contextly.Settings.getInstance().isAdmin() ) {
@@ -2067,8 +2068,12 @@ Contextly.SettingsAutoLogin = Contextly.createClass({
             success: function ( response ) {
                 if ( response.success && response.contextly_access_token ) {
                     jQuery( settings_button_id ).attr( 'contextly_access_token', response.contextly_access_token );
+                    jQuery( settings_button_id ).removeAttr( 'disabled' );
+                } else if ( response.message ) {
+                    jQuery( settings_button_id ).parent().append(
+                        jQuery( "<p style='color: red; font-weight: bold;'>* " + response.message + "</p>" )
+                    );
                 }
-                jQuery( settings_button_id ).removeAttr( 'disabled' );
             },
             error: function () {
                 jQuery( settings_button_id ).removeAttr( 'disabled' );
