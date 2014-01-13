@@ -268,7 +268,7 @@ class Contextly
         global $post;
 
         $default_html_code = '';
-        $additional_admin_controls = '';
+        $additional_html_controls = '';
 
         if ( is_admin() ) {
             $contextly_settings = new ContextlySettings();
@@ -289,12 +289,21 @@ class Contextly
             }
 
             if ( $display_global_settings ) {
-                $additional_admin_controls = $this->getAdditionalShowHideControl();
+	            $additional_html_controls = $this->getAdditionalShowHideControl();
             }
-
         }
+	    else
+	    {
+		    global $post;
+		    $api_options = $this->getAPIClientOptions();
 
-        return "<div id='" . self::WIDGET_SNIPPET_ID . "' class='" . self::WIDGET_SNIPPET_CLASS . "'>" . $default_html_code . "</div>" . $additional_admin_controls;
+			if ( isset( $api_options[ 'appID' ] ) && $api_options[ 'appID' ] && isset( $post ) && $post->ID )
+			{
+				$additional_html_controls = sprintf( '<a href="%s" style="display: none;">Related</a>',	Urls::getApiServerSeoHtmlUrl( $api_options[ 'appID' ], $post->ID ) );
+			}
+	    }
+
+        return "<div id='" . self::WIDGET_SNIPPET_ID . "' class='" . self::WIDGET_SNIPPET_CLASS . "'>" . $default_html_code . "</div>" . $additional_html_controls;
     }
 
 	public function getPluginJs( $script_name ) {
@@ -317,12 +326,9 @@ class Contextly
 		wp_enqueue_script( 'jquery' );
 		wp_enqueue_script( 'json2' );
 		wp_enqueue_script( 'easy_xdm', Urls::getMainJsCdnUrl( 'easyXDM.min.js' ), 'jquery', null );
+		wp_enqueue_script( 'pretty_photo', $this->getPluginJs( 'jquery.prettyPhoto.js' ), 'jquery', null );
 		wp_enqueue_script( 'contextly-create-class', $this->getPluginJs( 'contextly-class.min.js' ), 'easy_xdm', null );
 		wp_enqueue_script( 'contextly', $this->getPluginJs( 'contextly-wordpress.js' ), 'contextly-create-class', null );
-	}
-
-	public function loadContextlyAdditionalJSScripts() {
-		wp_enqueue_script( 'pretty_photo', $this->getPluginJs( 'jquery.prettyPhoto.js' ), 'jquery', null );
 	}
 
 	private function getAjaxUrl() {
@@ -372,7 +378,6 @@ class Contextly
 
         if ( is_page() || is_single() || $this->isAdminEditPage() ) {
 	        $this->loadContextlyAjaxJSScripts();
-			$this->loadContextlyAdditionalJSScripts();
 		    $this->makeContextlyJSObject();
 
 	        if ( $this->isAdminEditPage() ) {
