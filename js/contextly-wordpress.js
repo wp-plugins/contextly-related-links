@@ -1622,12 +1622,17 @@ Contextly.Utils = Contextly.createClass({
     },
 
     escape: function ( text ) {
-        return text
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;")
-            .replace(/'/g, "&#039;");
+        if ( text ) {
+            return text
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+
+        return '';
     }
 
 });
@@ -1659,44 +1664,46 @@ Contextly.PageEvents = Contextly.createClass({
     },
 
     trackLink: function ( widget_type, link_type, link_title ) {
-        var ga_object = null;
-
         if ( !widget_type || !link_type || !link_title ) return;
 
-        if ( typeof _gaq != 'undefined' ) {
-            ga_object = _gaq;
-        } else if ( typeof gts != 'undefined' ) {
-            ga_object = gts;
+        var label_limit = 30;
+        var category = 'ContextlyWidget';
+        var action = 'ClickedOutBound';
+        var label = link_title;
+
+        if ( widget_type == Contextly.WidgetType.SIDEBAR ) {
+            category = 'ContextlySidebar';
         }
 
-        if ( ga_object != null ) {
-            var label_limit = 30;
-            var category = 'ContextlyWidget';
-            var action = 'ClickedOutBound';
-            var label = link_title;
-
-            if ( widget_type == Contextly.WidgetType.SIDEBAR ) {
-                category = 'ContextlySidebar';
-            }
-
-            if ( label.length > label_limit ) {
-                label = label.substr( 0, label_limit );
-            }
-
-            if( widget_type == Contextly.WidgetType.SIDEBAR && ( link_type == Contextly.LinkType.WEB || link_type == Contextly.LinkType.PREVIOUS ) ) {
-                action = 'ClickedRecentRelated';
-            } else if ( link_type == Contextly.LinkType.PREVIOUS ) {
-                action = 'ClickedPreviousRelated';
-            } else if( link_type == Contextly.LinkType.RECENT ) {
-                action = 'ClickedRecentRelated';
-            } else if( link_type == Contextly.LinkType.PROMO ) {
-                action = 'ClickedPromoLink';
-            } else {
-                action = 'Clicked' + link_type.charAt(0).toUpperCase() + link_type.slice(1);
-            }
-
-            ga_object.push(['_trackEvent', category, action, label]);
+        if ( label.length > label_limit ) {
+            label = label.substr( 0, label_limit );
         }
+
+        if( widget_type == Contextly.WidgetType.SIDEBAR && ( link_type == Contextly.LinkType.WEB || link_type == Contextly.LinkType.PREVIOUS ) ) {
+            action = 'ClickedRecentRelated';
+        } else if ( link_type == Contextly.LinkType.PREVIOUS ) {
+            action = 'ClickedPreviousRelated';
+        } else if( link_type == Contextly.LinkType.RECENT ) {
+            action = 'ClickedRecentRelated';
+        } else if( link_type == Contextly.LinkType.PROMO ) {
+            action = 'ClickedPromoLink';
+        } else {
+            action = 'Clicked' + link_type.charAt(0).toUpperCase() + link_type.slice(1);
+        }
+
+        if ( typeof pageTracker != 'undefined' ) {
+            this.trackLinkOldStyle(category, action, label);
+        } else if ( typeof _gaq != 'undefined' ) {
+            this.trackLinkNewStyle(category, action, label);
+        }
+    },
+
+    trackLinkOldStyle: function (category, action, label) {
+        pageTracker._trackEvent(category, action, label);
+    },
+
+    trackLinkNewStyle: function (category, action, label) {
+        _gaq.push(['_trackEvent', category, action, label]);
     }
 
 });
