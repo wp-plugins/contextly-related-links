@@ -31,7 +31,7 @@ class Contextly
 	        add_filter( 'default_content', array( $this, 'addAutosidebarCodeFilter' ), 10, 2 );
         } else {
             add_action( 'init', array( $this, 'initDefault' ), 1 );
-            add_action('the_content', array( $this, 'addSnippetWidgetToContent' ) );
+	        add_action( 'the_content', array( $this, 'addSnippetWidgetToContent' ) );
         }
 
         add_action( 'wp_enqueue_scripts', array( $this, 'loadScripts' ) );
@@ -294,13 +294,15 @@ class Contextly
         }
 	    else
 	    {
-		    global $post;
-		    $api_options = $this->getAPIClientOptions();
+		    if ( $this->isLoadWidget() )
+		    {
 
-			if ( isset( $api_options[ 'appID' ] ) && $api_options[ 'appID' ] && isset( $post ) && $post->ID )
-			{
-				$additional_html_controls = sprintf( '<a href="%s" style="display: none;">Related</a>',	Urls::getApiServerSeoHtmlUrl( $api_options[ 'appID' ], $post->ID ) );
-			}
+			    $api_options = $this->getAPIClientOptions();
+				if ( isset( $api_options[ 'appID' ] ) && $api_options[ 'appID' ] && isset( $post ) && $post->ID )
+				{
+					$additional_html_controls = sprintf( '<a href="%s" style="display: none;">Related</a>',	Urls::getApiServerSeoHtmlUrl( $api_options[ 'appID' ], $post->ID ) );
+				}
+		    }
 	    }
 
         return "<div id='" . self::WIDGET_SNIPPET_ID . "' class='" . self::WIDGET_SNIPPET_CLASS . "'>" . $default_html_code . "</div>" . $additional_html_controls;
@@ -368,15 +370,23 @@ class Contextly
 
 	}
 
+	private function isLoadWidget()
+	{
+		global $post;
+
+		$contextly_settings = new ContextlySettings();
+		if ( $this->checkWidgetDisplayType() && !$contextly_settings->isPageDisplayDisabled( $post->ID ) )
+		{
+			return is_page() || is_single() || $this->isAdminEditPage();
+		}
+		else
+		{
+			return false;
+		}
+	}
+
 	public function loadScripts() {
-        global $post;
-
-        $contextly_settings = new ContextlySettings();
-        if ( !$this->checkWidgetDisplayType() || $contextly_settings->isPageDisplayDisabled( $post->ID ) ) {
-	        return;
-        }
-
-        if ( is_page() || is_single() || $this->isAdminEditPage() ) {
+        if ( $this->isLoadWidget() ) {
 	        $this->loadContextlyAjaxJSScripts();
 		    $this->makeContextlyJSObject();
 
@@ -387,10 +397,13 @@ class Contextly
     }
 
 	public function loadStyles() {
-		wp_register_style( 'pretty-photo-style', $this->getPluginCss( 'prettyPhoto/style.css' ) );
-		wp_enqueue_style( 'pretty-photo-style' );
-		wp_register_style( 'contextly-branding', $this->getPluginCss( 'branding/branding.css' ) );
-		wp_enqueue_style( 'contextly-branding' );
+		if ( $this->isLoadWidget() )
+		{
+			wp_register_style( 'pretty-photo-style', $this->getPluginCss( 'prettyPhoto/style.css' ) );
+			wp_enqueue_style( 'pretty-photo-style' );
+			wp_register_style( 'contextly-branding', $this->getPluginCss( 'branding/branding.css' ) );
+			wp_enqueue_style( 'contextly-branding' );
+		}
 	}
 
 	public function ajaxPublishPostCallback() {

@@ -89,6 +89,11 @@ You give us an RSS feed of stuff you want us to show off. This can be a feed of 
 
 == Changelog ==
 
+= 1.0.96 =
+
+- Minor display bug fixes
+
+
 = 1.0.95 =
 
 - Added SEO support. Search Engines can now see and spider the related results. This boosts SEO.
