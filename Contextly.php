@@ -31,7 +31,7 @@ class Contextly
 	        add_filter( 'default_content', array( $this, 'addAutosidebarCodeFilter' ), 10, 2 );
         } else {
             add_action( 'init', array( $this, 'initDefault' ), 1 );
-            add_action('the_content', array( $this, 'addSnippetWidgetToContent' ) );
+	        add_action( 'the_content', array( $this, 'addSnippetWidgetToContent' ) );
         }
 
         add_action( 'wp_enqueue_scripts', array( $this, 'loadScripts' ) );
@@ -268,7 +268,7 @@ class Contextly
         global $post;
 
         $default_html_code = '';
-        $additional_admin_controls = '';
+        $additional_html_controls = '';
 
         if ( is_admin() ) {
             $contextly_settings = new ContextlySettings();
@@ -289,12 +289,23 @@ class Contextly
             }
 
             if ( $display_global_settings ) {
-                $additional_admin_controls = $this->getAdditionalShowHideControl();
+	            $additional_html_controls = $this->getAdditionalShowHideControl();
             }
-
         }
+	    else
+	    {
+		    if ( $this->isLoadWidget() )
+		    {
 
-        return "<div id='" . self::WIDGET_SNIPPET_ID . "' class='" . self::WIDGET_SNIPPET_CLASS . "'>" . $default_html_code . "</div>" . $additional_admin_controls;
+			    $api_options = $this->getAPIClientOptions();
+				if ( isset( $api_options[ 'appID' ] ) && $api_options[ 'appID' ] && isset( $post ) && $post->ID )
+				{
+					$additional_html_controls = sprintf( '<a href="%s" style="display: none;">Related</a>',	Urls::getApiServerSeoHtmlUrl( $api_options[ 'appID' ], $post->ID ) );
+				}
+		    }
+	    }
+
+        return "<div id='" . self::WIDGET_SNIPPET_ID . "' class='" . self::WIDGET_SNIPPET_CLASS . "'>" . $default_html_code . "</div>" . $additional_html_controls;
     }
 
 	public function getPluginJs( $script_name ) {
@@ -317,12 +328,9 @@ class Contextly
 		wp_enqueue_script( 'jquery' );
 		wp_enqueue_script( 'json2' );
 		wp_enqueue_script( 'easy_xdm', Urls::getMainJsCdnUrl( 'easyXDM.min.js' ), 'jquery', null );
+		wp_enqueue_script( 'pretty_photo', $this->getPluginJs( 'jquery.prettyPhoto.js' ), 'jquery', null );
 		wp_enqueue_script( 'contextly-create-class', $this->getPluginJs( 'contextly-class.min.js' ), 'easy_xdm', null );
 		wp_enqueue_script( 'contextly', $this->getPluginJs( 'contextly-wordpress.js' ), 'contextly-create-class', null );
-	}
-
-	public function loadContextlyAdditionalJSScripts() {
-		wp_enqueue_script( 'pretty_photo', $this->getPluginJs( 'jquery.prettyPhoto.js' ), 'jquery', null );
 	}
 
 	private function getAjaxUrl() {
@@ -362,17 +370,24 @@ class Contextly
 
 	}
 
+	private function isLoadWidget()
+	{
+		global $post;
+
+		$contextly_settings = new ContextlySettings();
+		if ( $this->checkWidgetDisplayType() && !$contextly_settings->isPageDisplayDisabled( $post->ID ) )
+		{
+			return is_page() || is_single() || $this->isAdminEditPage();
+		}
+		else
+		{
+			return false;
+		}
+	}
+
 	public function loadScripts() {
-        global $post;
-
-        $contextly_settings = new ContextlySettings();
-        if ( !$this->checkWidgetDisplayType() || $contextly_settings->isPageDisplayDisabled( $post->ID ) ) {
-	        return;
-        }
-
-        if ( is_page() || is_single() || $this->isAdminEditPage() ) {
+        if ( $this->isLoadWidget() ) {
 	        $this->loadContextlyAjaxJSScripts();
-			$this->loadContextlyAdditionalJSScripts();
 		    $this->makeContextlyJSObject();
 
 	        if ( $this->isAdminEditPage() ) {
@@ -382,10 +397,13 @@ class Contextly
     }
 
 	public function loadStyles() {
-		wp_register_style( 'pretty-photo-style', $this->getPluginCss( 'prettyPhoto/style.css' ) );
-		wp_enqueue_style( 'pretty-photo-style' );
-		wp_register_style( 'contextly-branding', $this->getPluginCss( 'branding/branding.css' ) );
-		wp_enqueue_style( 'contextly-branding' );
+		if ( $this->isLoadWidget() )
+		{
+			wp_register_style( 'pretty-photo-style', $this->getPluginCss( 'prettyPhoto/style.css' ) );
+			wp_enqueue_style( 'pretty-photo-style' );
+			wp_register_style( 'contextly-branding', $this->getPluginCss( 'branding/branding.css' ) );
+			wp_enqueue_style( 'contextly-branding' );
+		}
 	}
 
 	public function ajaxPublishPostCallback() {

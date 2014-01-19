@@ -394,8 +394,7 @@ Contextly.SnippetWidgetFormatter = Contextly.createClass({
     display: function () {
         if ( this.hasWidgetData() ) {
             this.displayText( this.getWidgetHTML() );
-            this.loadCss();
-            this.attachVideoPopups();
+            this.loadCss( 'widget-css' );
 
             // Check if we need to change snippet position on page
             if ( !Contextly.Settings.getInstance().isAdmin() ) {
@@ -406,6 +405,8 @@ Contextly.SnippetWidgetFormatter = Contextly.createClass({
             if ( settings && settings.display_type ) {
                 this.getDisplayElement().attr( 'widget-type', settings.display_type );
             }
+
+            this.attachVideoPopups();
         }
 
         if ( Contextly.Settings.getInstance().isAdmin() ) {
@@ -429,14 +430,14 @@ Contextly.SnippetWidgetFormatter = Contextly.createClass({
         );
     },
 
-    loadCss: function () {
+    loadCss: function ( contextly_id ) {
         var css_url = this.getWidgetCSSUrl();
 
-        Contextly.Utils.getInstance().loadCssFile( css_url );
+        Contextly.Utils.getInstance().loadCssFile( css_url, contextly_id );
 
         if ( Contextly.Utils.getInstance().isIE7() ) {
             var css_ie7fix = Contextly.Settings.getInstance().getCdnCssUrl() + "_plugin/"  + Contextly.Settings.getInstance().getPluginVersion() +  "/css/template-ie-fix.css";
-            Contextly.Utils.getInstance().loadCssFile( css_ie7fix );
+            Contextly.Utils.getInstance().loadCssFile( css_ie7fix, 'widget-ie-fix' );
         }
 
         // Make needed css rules and load custom widget css
@@ -578,7 +579,7 @@ Contextly.SnippetWidgetFormatter = Contextly.createClass({
         return "<a class=\"ctx_title ctx_module\" rel=\"ctx_video_link\" href=\"" +
             this.escape( link.native_url ) + "\" title=\"" +
             this.escape( link.title ) + "\" contextly-url=\"" + link.url + "\" " +
-            "'\" " + this.getOnclickHtml( link ) + ">" +
+            this.getOnclickHtml( link ) + ">" +
             content + "</a>" + this.getLinkATagIE7Fix();
     },
 
@@ -1318,7 +1319,7 @@ Contextly.Blocks2WidgetCssCustomBuilder = Contextly.createClass({
     {
         var css_code = "";
 
-        if ( settings.css_code ) css_code += '.ctx_blocks2_widget ' + Contextly.Utils.getInstance().escape( settings.css_code );
+        if ( settings.css_code ) css_code += '.ctx_blocks_widget2 ' + Contextly.Utils.getInstance().escape( settings.css_code );
 
         if ( settings.font_family ) css_code += this.buildCSSRule( entry, ".ctx_blocks_widget2 p.ctx_link" , "font-family", settings.font_family );
         if ( settings.font_size ) css_code += this.buildCSSRule( entry, ".ctx_blocks_widget2 p.ctx_link" , "font-size", settings.font_size );
@@ -1460,7 +1461,7 @@ Contextly.SidebarWidgetFormatter = Contextly.createClass({
                     if ( description ) sidebar_content.prepend( "<div class='ctx_sidebar_description'>" + self.escape( description ) + "</div>" );
                     if ( title ) sidebar_content.prepend( "<div class='ctx_sidebar_title'>" + self.escape( title ) + "</div>" );
 
-                    self.loadCss();
+                    self.loadCss( 'sidebar-css' );
                 }
             }
         );
@@ -1600,14 +1601,20 @@ Contextly.Utils = Contextly.createClass({
         return false;
     },
 
-    loadCssFile: function ( css_url ) {
+    loadCssFile: function ( css_url, contextly_id ) {
+        if ( contextly_id ) {
+            // Remove previously loaded script
+            jQuery( 'link[contextly_id="' + contextly_id + '"]').remove();
+        }
+
         jQuery( "head" ).append( "<link>" );
         var css_node = jQuery( "head" ).children( ":last" );
         css_node.attr({
             rel:    "stylesheet",
             media:  "screen",
             type:   "text/css",
-            href:   css_url
+            href:   css_url,
+            contextly_id:   contextly_id
         });
     },
 
@@ -1621,12 +1628,17 @@ Contextly.Utils = Contextly.createClass({
     },
 
     escape: function ( text ) {
-        return text
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;")
-            .replace(/'/g, "&#039;");
+        if ( text ) {
+            return text
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+
+        return '';
     }
 
 });
@@ -1658,44 +1670,46 @@ Contextly.PageEvents = Contextly.createClass({
     },
 
     trackLink: function ( widget_type, link_type, link_title ) {
-        var ga_object = null;
-
         if ( !widget_type || !link_type || !link_title ) return;
 
-        if ( typeof _gaq != 'undefined' ) {
-            ga_object = _gaq;
-        } else if ( typeof gts != 'undefined' ) {
-            ga_object = gts;
+        var label_limit = 30;
+        var category = 'ContextlyWidget';
+        var action = 'ClickedOutBound';
+        var label = link_title;
+
+        if ( widget_type == Contextly.WidgetType.SIDEBAR ) {
+            category = 'ContextlySidebar';
         }
 
-        if ( ga_object != null ) {
-            var label_limit = 30;
-            var category = 'ContextlyWidget';
-            var action = 'ClickedOutBound';
-            var label = link_title;
-
-            if ( widget_type == Contextly.WidgetType.SIDEBAR ) {
-                category = 'ContextlySidebar';
-            }
-
-            if ( label.length > label_limit ) {
-                label = label.substr( 0, label_limit );
-            }
-
-            if( widget_type == Contextly.WidgetType.SIDEBAR && ( link_type == Contextly.LinkType.WEB || link_type == Contextly.LinkType.PREVIOUS ) ) {
-                action = 'ClickedRecentRelated';
-            } else if ( link_type == Contextly.LinkType.PREVIOUS ) {
-                action = 'ClickedPreviousRelated';
-            } else if( link_type == Contextly.LinkType.RECENT ) {
-                action = 'ClickedRecentRelated';
-            } else if( link_type == Contextly.LinkType.PROMO ) {
-                action = 'ClickedPromoLink';
-            } else {
-                action = 'Clicked' + link_type.charAt(0).toUpperCase() + link_type.slice(1);
-            }
-
-            ga_object.push(['_trackEvent', category, action, label]);
+        if ( label.length > label_limit ) {
+            label = label.substr( 0, label_limit );
         }
+
+        if( widget_type == Contextly.WidgetType.SIDEBAR && ( link_type == Contextly.LinkType.WEB || link_type == Contextly.LinkType.PREVIOUS ) ) {
+            action = 'ClickedRecentRelated';
+        } else if ( link_type == Contextly.LinkType.PREVIOUS ) {
+            action = 'ClickedPreviousRelated';
+        } else if( link_type == Contextly.LinkType.RECENT ) {
+            action = 'ClickedRecentRelated';
+        } else if( link_type == Contextly.LinkType.PROMO ) {
+            action = 'ClickedPromoLink';
+        } else {
+            action = 'Clicked' + link_type.charAt(0).toUpperCase() + link_type.slice(1);
+        }
+
+        if ( typeof pageTracker != 'undefined' ) {
+            this.trackLinkOldStyle(category, action, label);
+        } else if ( typeof _gaq != 'undefined' ) {
+            this.trackLinkNewStyle(category, action, label);
+        }
+    },
+
+    trackLinkOldStyle: function (category, action, label) {
+        pageTracker._trackEvent(category, action, label);
+    },
+
+    trackLinkNewStyle: function (category, action, label) {
+        _gaq.push(['_trackEvent', category, action, label]);
     }
 
 });
@@ -2067,8 +2081,12 @@ Contextly.SettingsAutoLogin = Contextly.createClass({
             success: function ( response ) {
                 if ( response.success && response.contextly_access_token ) {
                     jQuery( settings_button_id ).attr( 'contextly_access_token', response.contextly_access_token );
+                    jQuery( settings_button_id ).removeAttr( 'disabled' );
+                } else if ( response.message ) {
+                    jQuery( settings_button_id ).parent().append(
+                        jQuery( "<p style='color: red; font-weight: bold;'>* " + response.message + "</p>" )
+                    );
                 }
-                jQuery( settings_button_id ).removeAttr( 'disabled' );
             },
             error: function () {
                 jQuery( settings_button_id ).removeAttr( 'disabled' );
