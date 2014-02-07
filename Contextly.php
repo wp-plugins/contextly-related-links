@@ -20,6 +20,10 @@ class Contextly
     const WIDGET_SIDEBAR_PREFIX = 'contextly-';
 	const WIDGET_AUTO_SIDEBAR_CODE = '[contextly_auto_sidebar id="%HASH%"]';
 
+	const MAIN_MODULE_SHORT_CODE = 'contextly_main_module';
+	const MAIN_MODULE_SHORT_CODE_CLASS = 'ctx_widget_hidden';
+	const MAIN_MODULE_SHORT_CODE_ID = 'ctx_main_module_short_code';
+
     function __construct() {
         Contextly_Api::getInstance()->setOptions( $this->getAPIClientOptions() );
     }
@@ -181,6 +185,7 @@ class Contextly
     }
 
     public function initDefault() {
+        add_shortcode(self::MAIN_MODULE_SHORT_CODE, array( $this, 'prepareMainModule' ) );
         add_shortcode('contextly_sidebar', array( $this, 'prepareSidebar' ) );
         add_shortcode('contextly_auto_sidebar', array( $this, 'prepareAutoSidebar' ) );
     }
@@ -329,6 +334,7 @@ class Contextly
 		wp_enqueue_script( 'json2' );
 		wp_enqueue_script( 'easy_xdm', Urls::getMainJsCdnUrl( 'easyXDM.min.js' ), 'jquery', null );
 		wp_enqueue_script( 'pretty_photo', $this->getPluginJs( 'jquery.prettyPhoto.js' ), 'jquery', null );
+		wp_enqueue_script( 'jquery_cookie', $this->getPluginJs( 'jquery.cookie.js' ), 'jquery', null );
 		wp_enqueue_script( 'contextly-create-class', $this->getPluginJs( 'contextly-class.min.js' ), 'easy_xdm', null );
 		wp_enqueue_script( 'contextly', $this->getPluginJs( 'contextly-wordpress.js' ), 'contextly-create-class', null );
 	}
@@ -630,6 +636,13 @@ class Contextly
 		else {
 			return '';
 		}
+	}
+
+	/**
+	 * @return string
+	 */
+	public function prepareMainModule() {
+		return sprintf( "<div class='%s' id='%s'></div>", self::MAIN_MODULE_SHORT_CODE_CLASS, self::MAIN_MODULE_SHORT_CODE_ID );
 	}
 
 

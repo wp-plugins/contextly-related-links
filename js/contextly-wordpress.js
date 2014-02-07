@@ -90,8 +90,11 @@ Contextly.Loader = Contextly.createClass({
 
                 var pageView = new Contextly.PageView( response );
                 pageView.display();
+
+                self.initCookie( response );
             }
         );
+
     },
 
     trackPageEvent: function ( setting_id, event_name, event_key ) {
@@ -102,7 +105,8 @@ Contextly.Loader = Contextly.createClass({
             'setting_id': setting_id,
             'event_name': event_name,
             'event_key' : event_key,
-            'event_date': new Date()
+            'event_date': new Date(),
+            'cookie_id' : this.getCookieId()
         };
 
         Contextly.RESTClient.getInstance().call(
@@ -112,7 +116,42 @@ Contextly.Loader = Contextly.createClass({
             function ( response ) {
             }
         );
+    },
+
+    getCookieName: function ()
+    {
+        return "contextly";
+    },
+
+    initCookie: function ( rest_response )
+    {
+        if ( rest_response && rest_response.cookie_id )
+        {
+            if ( !this.getCookieId() )
+            {
+                this.setCookieId( rest_response.cookie_id );
+            }
+        }
+    },
+
+    setCookieId: function ( cookie_id )
+    {
+        jQuery.cookie( this.getCookieName(), {id: cookie_id}, { expires: 1, path: '/' } );
+    },
+
+    getCookieId: function ()
+    {
+        jQuery.cookie.json = true;
+        var cookie = jQuery.cookie( this.getCookieName() );
+
+        if ( cookie && cookie.id && cookie.id != 'null' )
+        {
+            return cookie.id;
+        }
+
+        return null;
     }
+
 });
 
 Contextly.PageView = Contextly.createClass({
@@ -361,6 +400,11 @@ Contextly.SnippetWidgetFormatter = Contextly.createClass({
         return jQuery( '#' + this.widget_html_id );
     },
 
+    getMainWidgetShortCodeId: function ()
+    {
+        return '#ctx_main_module_short_code';
+    },
+
     hasWidgetData: function () {
         return this.widget && this.widget.links;
     },
@@ -466,18 +510,27 @@ Contextly.SnippetWidgetFormatter = Contextly.createClass({
     },
 
     fixSnippetPagePosition: function () {
-        // We need to be sure that our control is last in content element
-        if (!this.getDisplayElement().is(":last-child")) {
-            this.getDisplayElement().parent().append(this.getDisplayElement());
+        if ( jQuery( this.getMainWidgetShortCodeId() ).length )
+        {
+            this.getDisplayElement().appendTo(
+                this.getMainWidgetShortCodeId()
+            );
         }
+        else
+        {
+            // We need to be sure that our control is last in content element
+            if (!this.getDisplayElement().is(":last-child")) {
+                this.getDisplayElement().parent().append(this.getDisplayElement());
+            }
 
-        // Check for a custom position on page
-        var wp_settings = Contextly.Settings.getInstance().getWPSettings();
-        if (typeof wp_settings != "undefined" && typeof wp_settings.target_id != "undefined" && wp_settings.target_id) {
-            if (typeof wp_settings.block_position != "undefined" && wp_settings.block_position == "before") {
-                this.getDisplayElement().insertBefore(jQuery("#" + wp_settings.target_id));
-            } else if (wp_settings.target_id) {
-                this.getDisplayElement().insertAfter(jQuery("#" + wp_settings.target_id));
+            // Check for a custom position on page
+            var wp_settings = Contextly.Settings.getInstance().getWPSettings();
+            if (typeof wp_settings != "undefined" && typeof wp_settings.target_id != "undefined" && wp_settings.target_id) {
+                if (typeof wp_settings.block_position != "undefined" && wp_settings.block_position == "before") {
+                    this.getDisplayElement().insertBefore(jQuery("#" + wp_settings.target_id));
+                } else if (wp_settings.target_id) {
+                    this.getDisplayElement().insertAfter(jQuery("#" + wp_settings.target_id));
+                }
             }
         }
     },
@@ -902,7 +955,7 @@ Contextly.TextWidgetCssCustomBuilder = Contextly.createClass({
     buildCSS: function ( entry, settings ) {
         var css_code = "";
 
-        if ( settings.css_code ) css_code += '.ctx_text_widget ' + Contextly.Utils.getInstance().escape( settings.css_code );
+        if ( settings.css_code ) css_code += Contextly.Utils.getInstance().escape( settings.css_code );
         if ( settings.font_family ) css_code += this.buildCSSRule( entry, ".ctx_text_widget .ctx_link" , "font-family", settings.font_family );
         if ( settings.font_size ) css_code += this.buildCSSRule( entry, ".ctx_text_widget .ctx_link" , "font-size", settings.font_size );
         if ( settings.color_links ) {
@@ -1113,7 +1166,7 @@ Contextly.TabsWidgetCssCustomBuilder = Contextly.createClass({
     {
         var css_code = "";
 
-        if ( settings.css_code ) css_code += '.ctx_tabs_widget ' + Contextly.Utils.getInstance().escape( settings.css_code );
+        if ( settings.css_code ) css_code += Contextly.Utils.getInstance().escape( settings.css_code );
 
         if ( settings.font_family ) css_code += this.buildCSSRule( entry, ".ctx_tabs_widget .ctx_link" , "font-family", settings.font_family );
         if ( settings.font_size ) css_code += this.buildCSSRule( entry, ".ctx_tabs_widget .ctx_link" , "font-size", settings.font_size );
@@ -1244,7 +1297,7 @@ Contextly.BlocksWidgetCssCustomBuilder = Contextly.createClass({
     {
         var css_code = "";
 
-        if ( settings.css_code ) css_code += '.ctx_blocks_widget ' + Contextly.Utils.getInstance().escape( settings.css_code );
+        if ( settings.css_code ) css_code += Contextly.Utils.getInstance().escape( settings.css_code );
 
         if ( settings.font_family ) css_code += this.buildCSSRule( entry, ".ctx_blocks_widget p.ctx_link" , "font-family", settings.font_family );
         if ( settings.font_size ) css_code += this.buildCSSRule( entry, ".ctx_blocks_widget p.ctx_link" , "font-size", settings.font_size );
@@ -1319,7 +1372,7 @@ Contextly.Blocks2WidgetCssCustomBuilder = Contextly.createClass({
     {
         var css_code = "";
 
-        if ( settings.css_code ) css_code += '.ctx_blocks_widget2 ' + Contextly.Utils.getInstance().escape( settings.css_code );
+        if ( settings.css_code ) css_code += Contextly.Utils.getInstance().escape( settings.css_code );
 
         if ( settings.font_family ) css_code += this.buildCSSRule( entry, ".ctx_blocks_widget2 p.ctx_link" , "font-family", settings.font_family );
         if ( settings.font_size ) css_code += this.buildCSSRule( entry, ".ctx_blocks_widget2 p.ctx_link" , "font-size", settings.font_size );
@@ -1384,7 +1437,7 @@ Contextly.FloatWidgetCssCustomBuilder = Contextly.createClass({
 
     buildCSS: function ( entry, settings ) {
         var css_code = "";
-        if ( settings.css_code ) css_code += '.ctx_float_widget ' + Contextly.Utils.getInstance().escape( settings.css_code );
+        if ( settings.css_code ) css_code += Contextly.Utils.getInstance().escape( settings.css_code );
 
         if ( settings.font_family ) css_code += this.buildCSSRule( entry, ".ctx_float_widget .ctx_link" , "font-family", settings.font_family );
         if ( settings.font_size ) css_code += this.buildCSSRule( entry, ".ctx_float_widget .ctx_link" , "font-size", settings.font_size );
@@ -1492,6 +1545,7 @@ Contextly.SidebarWidgetCssCustomBuilder = Contextly.createClass({
 
     buildCSS: function ( entry, settings ) {
         var css_code = "";
+
         if ( settings.css_code ) {
             var site_custom_code = Contextly.Utils.getInstance().escape( settings.css_code );
             if ( site_custom_code.indexOf( entry ) == -1 ) {
@@ -1811,7 +1865,8 @@ Contextly.RESTClient = Contextly.createClass({
                 version:    contextly_settings.getPluginVersion(),
                 site_path:  contextly_settings.getAppId(),
                 admin:      contextly_settings.isAdmin(),
-                page_id:    contextly_settings.getPageId()
+                page_id:    contextly_settings.getPageId(),
+                cookie_id:  Contextly.Loader.getInstance().getCookieId()
             }
         );
 
@@ -2012,7 +2067,7 @@ Contextly.PopupHelper = Contextly.createClass({
     },
 
     showStubPopup: function () {
-        this.url = this.url || 'http://contextly.com/contact-us/';
+        this.url = this.url || 'http://contextly.com/contact-us/?type=undefined&key=' + Contextly.Settings.getInstance().getAppId();
         window.open( this.url );
     },
 
@@ -2084,7 +2139,7 @@ Contextly.SettingsAutoLogin = Contextly.createClass({
                     jQuery( settings_button_id ).removeAttr( 'disabled' );
                 } else if ( response.message ) {
                     jQuery( settings_button_id ).parent().append(
-                        jQuery( "<p style='color: red; font-weight: bold;'>* " + response.message + "</p>" )
+                        jQuery( "<p style='color: red; font-weight: bold;'>* You need a valid API key. Click the API tab above to get one.</p>" )
                     );
                 }
             },
