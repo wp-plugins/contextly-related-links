@@ -1,0 +1,14 @@
+{
+  "aggregate": true,
+
+  "base": "components/overlay",
+  "js": [
+    "overlay"
+  ],
+  "css": [
+    "overlay"
+  ],
+  "media": [
+    "img"
+  ]
+}

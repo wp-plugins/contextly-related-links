@@ -1,0 +1,18 @@
+#!/usr/bin/env php
+<?php
+
+require_once '../server/libraries/vendor/autoload.php';
+require_once '../server/Kit.php';
+ContextlyKit::registerAutoload();
+
+// Run the Kit in special mode.
+$settings = new ContextlyKitSettings();
+$settings->mode = 'pkg';
+$kit = new ContextlyKit($settings);
+
+// Perform packaging operations.
+$manager = $kit->newPackageManager();
+$command = $kit->newConsolePackagerCommand($manager);
+$app = new \Symfony\Component\Console\Application('Contextly Kit Packager');
+$app->add($command);
+$app->run();

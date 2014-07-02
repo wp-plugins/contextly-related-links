@@ -63,7 +63,7 @@ class ContextlySettings {
 
         add_settings_section( 'display_section', 'Main Settings', array(), self::ADVANCED_SETTINGS_KEY );
 	    add_settings_field( 'display_control', 'Display Contextly Widgets For Post Types:', array( $this, 'settingsDisplayFor' ), self::ADVANCED_SETTINGS_KEY, 'display_section' );
-	    add_settings_field( 'publish_confirmation', 'Prompt to Choose Related Posts before publishing:', array( $this, 'settingsDisplayPublishConfirmation' ), self::ADVANCED_SETTINGS_KEY, 'display_section' );
+	    add_settings_field( 'kit_cdn', 'Load Kit resources from CDN:', array( $this, 'settingsDisplayKitCdn' ), self::ADVANCED_SETTINGS_KEY, 'display_section' );
 
 	    $this->tabs[ self::GENERAL_SETTINGS_KEY ] = __( 'General' );
 	    $this->tabs[ self::API_SETTINGS_KEY ] = __( 'API' );
@@ -120,7 +120,7 @@ class ContextlySettings {
 			$class = 'updated';
 		}
 
-		echo '<div ' . ( $error ? 'id="contextly_warning" ' : '') . 'class="' . $class . ' fade' . '"><p>'. $message . '</p></div>';
+		echo '<div ' . ( $error ? 'id="contextly_warning" ' : '') . 'class="' . esc_attr( $class ) . ' fade' . '"><p>'. esc_html( $message ) . '</p></div>';
 	}
 
 	private function getWPPluginSettingsUrl( $tab = 'contextly_options_api' ) {
@@ -143,7 +143,7 @@ class ContextlySettings {
         ?>
         <script>
             function open_contextly_settings() {
-                var base_url = "<?php echo $this->getContextlyBaseUrl() ?>";
+                var base_url = <?php echo json_encode( $this->getContextlyBaseUrl() ) ?>;
 				var button_id = '#contextly-settings-btn';
 	            var auth_token_attr = 'contextly_access_token';
 	            var token_attr = jQuery( button_id ).attr( auth_token_attr );
@@ -151,7 +151,7 @@ class ContextlySettings {
 	            if ( typeof token_attr !== 'undefined' && token_attr !== false ) {
 		            base_url += "&" + auth_token_attr + "=" + encodeURIComponent( token_attr );
 	            } else {
-		            base_url = "<?php echo $this->getContextlyRegistrationUrl() ?>";
+		            base_url = <?php echo json_encode( $this->getContextlyRegistrationUrl() ) ?>;
 	            }
 
                 window.open( base_url );
@@ -238,13 +238,13 @@ class ContextlySettings {
         echo '<h2 class="nav-tab-wrapper">';
         foreach ( $this->tabs as $tab_key => $tab_caption ) {
             $active = $current_tab == $tab_key ? 'nav-tab-active' : '';
-            echo '<a class="nav-tab ' . $active . '" href="?page=' . self::OPTIONS_KEY . '&tab=' . $tab_key . '">' . $tab_caption . '</a>';
+	        echo '<a class="nav-tab ' . esc_attr( $active ) . '" href="' . esc_url( '?page=' . self::OPTIONS_KEY . '&tab=' . $tab_key ) . '">' . esc_html( $tab_caption ) . '</a>';
         }
         echo '</h2>';
     }
 
     public function apiLayoutSection() {
-        echo "<p>In order to communicate securely, we use a shared secret key. You can find your secret API key on <a target='_blank' href='".$this->getContextlyRegistrationUrl('tour')."'>this page</a>. Copy and paste it below.</p>";
+        echo "<p>In order to communicate securely, we use a shared secret key. You can find your secret API key on <a target='_blank' href='".esc_url( $this->getContextlyRegistrationUrl('tour') )."'>this page</a>. Copy and paste it below.</p>";
     }
 
     public function apiKeyInput() {
@@ -262,14 +262,14 @@ class ContextlySettings {
 		    }
 	    }
 
-        echo "<label><input name='" . self::API_SETTINGS_KEY . "[api_key]' type='text' size='40' value='{$options["api_key"]}' " . $input_style . "/></label>";
+	    echo "<label><input name='" . esc_attr( self::API_SETTINGS_KEY ) . "[api_key]' type='text' size='40' value='". esc_attr( $options["api_key"] ) . "' " . esc_html( $input_style ) . "/></label>";
     }
 
 	public function checkApiSettings() {
 		$options = get_option( self::API_SETTINGS_KEY );
 
 		if ( !$options || !isset( $options["api_key"] ) || !$options["api_key"] || !$this->validateApiKeyRegexp( $options['api_key'] ) ) {
-			$this->showAdminMessage( sprintf( 'You must %sconfigure the plugin%s to enable Contextly for WordPress.', '<a href="' . $this->getWPPluginSettingsUrl() . '">', '</a>' ), true );
+			$this->showAdminMessage( sprintf( 'You must %sconfigure the plugin%s to enable Contextly for WordPress.', '<a href="' . esc_url( $this->getWPPluginSettingsUrl() ) . '">', '</a>' ), true );
 		}
 	}
 
@@ -286,7 +286,7 @@ class ContextlySettings {
         $options = get_option( self::ADVANCED_SETTINGS_KEY );
 
         echo "<label>";
-        echo "<input id='link_type_override' name='" . self::ADVANCED_SETTINGS_KEY . "[link_type]' type='radio' value='override' " . ($options['link_type'] == "override" ? "checked='checked'" : "") . "/>";
+	    echo "<input id='link_type_override' name='" . esc_attr( self::ADVANCED_SETTINGS_KEY ) . "[link_type]' type='radio' value='override' " . checked( $options['link_type'], "override", false ) . "/>";
         echo " With this setting, the WordPress link button in the Visual editor is changed to used Contextly to add links to the body of your posts. There is no dedicated button for adding single links through Contextly with this option.";
         echo "</label>";
     }
@@ -294,9 +294,23 @@ class ContextlySettings {
     public function settingsDefault() {
         $options = get_option( self::ADVANCED_SETTINGS_KEY );
         echo "<label>";
-        echo "<input id='link_type_default' name='" . self::ADVANCED_SETTINGS_KEY . "[link_type]' type='radio' value='' " . (!$options['link_type'] ? "checked='checked'" : "") . "/>";
+	    echo "<input id='link_type_default' name='" . esc_attr( self::ADVANCED_SETTINGS_KEY ) . "[link_type]' type='radio' value='' " . checked( empty( $options['link_type'] ), true, false ) . "/>";
         echo " With this setting, WordPress's single link button in the Visual editor works as it normally does. The Visual editor bar gets an additional single link button so you can add links to the body of your post using Contextly.";
         echo "</label>";
+    }
+
+    public function settingsTargetInput() {
+        $options = get_option( self::ADVANCED_SETTINGS_KEY );
+        echo "<input id='linker_target_id' name='" . self::ADVANCED_SETTINGS_KEY . "[target_id]' type='text' size='30' value='{$options["target_id"]}' />";
+    }
+
+    public function settingsBlockPosition() {
+        $options = get_option( self::ADVANCED_SETTINGS_KEY );
+        echo "
+			<select id='linker_block_position' name='" . self::ADVANCED_SETTINGS_KEY . "[block_position]'>
+				<option value='after' " . ($options["block_position"] == "after" ? "selected='selected'" : "") . ">Below</option>
+				<option value='before' " . ($options["block_position"] == "before" ? "selected='selected'" : "") . ">Above</option>
+			</select>";
     }
 
     public function settingsDisplayFor() {
@@ -307,22 +321,22 @@ class ContextlySettings {
 	    foreach ( $post_types as $post_type ) {
 		    if ( $post_type->public ) {
 			    echo "<tr><td style='padding: 3px;'>";
-			    echo "<input id='post-type-{$post_type->name}' name='" . self::ADVANCED_SETTINGS_KEY . "[display_type][]' type='checkbox' value='{$post_type->name}' " . (in_array( $post_type->name, ( array_values( $values ) ) ) ? "checked='checked'" : "" ) . " />";
+			    echo "<input id='post-type-" . esc_attr( $post_type->name ) . "' name='" . esc_attr( self::ADVANCED_SETTINGS_KEY ) . "[display_type][]' type='checkbox' value='" . esc_attr( $post_type->name ) . "' " . checked( in_array( $post_type->name, ( array_values( $values ) ) ), true, false ) . " />";
 			    echo "</td><td style='padding: 3px;'><label for='post-type-{$post_type->name}'>";
-			    echo $post_type->labels->name;
+			    echo esc_html( $post_type->labels->name );
 			    echo "</label></td></tr>";
 		    }
 	    }
 	    echo "</table>";
     }
 
-	public function settingsDisplayPublishConfirmation() {
-		$publish_confirmation = $this->getPublishConfirmationValue();
-		$control_name = self::ADVANCED_SETTINGS_KEY . "[publish_confirmation]";
+	public function settingsDisplayKitCdn() {
+		$kit_cdn = $this->getKitCdnValue();
+		$control_name = self::ADVANCED_SETTINGS_KEY . "[kit_cdn]";
 
 		echo "
 		<input type='hidden' name='{$control_name}' value='0' />
-		<input name='{$control_name}' type='checkbox' value='1' " . ( $publish_confirmation ? "checked='checked'" : "" ) . " style='margin-left: 3px;'/>";
+		<input name='{$control_name}' type='checkbox' value='1' " . ( $kit_cdn ? "checked='checked'" : "" ) . " style='margin-left: 3px;'/>";
 	}
 
     public function getPluginOptions() {
@@ -330,7 +344,6 @@ class ContextlySettings {
         if ( !is_array( $options ) ) {
 	        $options = array();
         }
-	    $options[ 'publish_confirmation' ] = $this->getPublishConfirmationValue();
 
         return $options;
     }
@@ -356,14 +369,14 @@ class ContextlySettings {
         return $values;
     }
 
-	public function getPublishConfirmationValue() {
+	public function getKitCdnValue() {
 		$options = get_option( self::ADVANCED_SETTINGS_KEY );
 
-		if ( isset( $options[ 'publish_confirmation' ] ) ) {
-			return (bool)$options[ 'publish_confirmation' ];
+		if ( isset( $options[ 'kit_cdn' ] ) ) {
+			return (bool) $options[ 'kit_cdn' ];
 		}
 
-		return false;
+		return true;
 	}
 
     public function isPageDisplayDisabled( $page_id ) {
