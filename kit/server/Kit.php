@@ -173,7 +173,8 @@ class ContextlyKit {
   }
 
   function isCdnEnabled() {
-    return !$this->isDevMode() && $this->settings->cdn;
+    //return !$this->isDevMode() && $this->settings->cdn;
+	return false;
   }
 
   protected function getServerUrls() {
