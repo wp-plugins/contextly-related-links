@@ -63,7 +63,7 @@ class ContextlySettings {
 
         add_settings_section( 'display_section', 'Main Settings', array(), self::ADVANCED_SETTINGS_KEY );
 	    add_settings_field( 'display_control', 'Display Contextly Widgets For Post Types:', array( $this, 'settingsDisplayFor' ), self::ADVANCED_SETTINGS_KEY, 'display_section' );
-	    //add_settings_field( 'kit_cdn', 'Load Kit resources from CDN:', array( $this, 'settingsDisplayKitCdn' ), self::ADVANCED_SETTINGS_KEY, 'display_section' );
+	    add_settings_field( 'publish_confirmation', 'Prompt to Choose Related Posts before publishing:', array( $this, 'settingsDisplayPublishConfirmation' ), self::ADVANCED_SETTINGS_KEY, 'display_section' );
 
 	    $this->tabs[ self::GENERAL_SETTINGS_KEY ] = __( 'General' );
 	    $this->tabs[ self::API_SETTINGS_KEY ] = __( 'API' );
@@ -299,20 +299,6 @@ class ContextlySettings {
         echo "</label>";
     }
 
-    public function settingsTargetInput() {
-        $options = get_option( self::ADVANCED_SETTINGS_KEY );
-        echo "<input id='linker_target_id' name='" . self::ADVANCED_SETTINGS_KEY . "[target_id]' type='text' size='30' value='{$options["target_id"]}' />";
-    }
-
-    public function settingsBlockPosition() {
-        $options = get_option( self::ADVANCED_SETTINGS_KEY );
-        echo "
-			<select id='linker_block_position' name='" . self::ADVANCED_SETTINGS_KEY . "[block_position]'>
-				<option value='after' " . ($options["block_position"] == "after" ? "selected='selected'" : "") . ">Below</option>
-				<option value='before' " . ($options["block_position"] == "before" ? "selected='selected'" : "") . ">Above</option>
-			</select>";
-    }
-
     public function settingsDisplayFor() {
 	    $values = $this->getWidgetDisplayType();
 	    $post_types = get_post_types( '', 'objects' );
@@ -330,13 +316,13 @@ class ContextlySettings {
 	    echo "</table>";
     }
 
-	public function settingsDisplayKitCdn() {
-		$kit_cdn = $this->getKitCdnValue();
-		$control_name = self::ADVANCED_SETTINGS_KEY . "[kit_cdn]";
+	public function settingsDisplayPublishConfirmation() {
+		$publish_confirmation = $this->getPublishConfirmationValue();
+		$control_name = self::ADVANCED_SETTINGS_KEY . "[publish_confirmation]";
 
 		echo "
-		<input type='hidden' name='{$control_name}' value='0' />
-		<input name='{$control_name}' type='checkbox' value='1' " . ( $kit_cdn ? "checked='checked'" : "" ) . " style='margin-left: 3px;'/>";
+		<input type='hidden' name='" . esc_attr( $control_name ) . "' value='0' />
+		<input name='" . esc_attr( $control_name ) . "' type='checkbox' value='1' " . checked( $publish_confirmation, true, false ) . " style='margin-left: 3px;'/>";
 	}
 
     public function getPluginOptions() {
@@ -344,6 +330,7 @@ class ContextlySettings {
         if ( !is_array( $options ) ) {
 	        $options = array();
         }
+	    $options[ 'publish_confirmation' ] = $this->getPublishConfirmationValue();
 
         return $options;
     }
@@ -369,12 +356,12 @@ class ContextlySettings {
         return $values;
     }
 
-	public function getKitCdnValue() {
-/*		$options = get_option( self::ADVANCED_SETTINGS_KEY );
+	public function getPublishConfirmationValue() {
+		$options = get_option( self::ADVANCED_SETTINGS_KEY );
 
-		if ( isset( $options[ 'kit_cdn' ] ) ) {
-			return (bool) $options[ 'kit_cdn' ];
-		}*/
+		if ( isset( $options[ 'publish_confirmation' ] ) ) {
+			return (bool)$options[ 'publish_confirmation' ];
+		}
 
 		return false;
 	}
