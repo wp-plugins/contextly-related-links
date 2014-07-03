@@ -81,17 +81,6 @@ Contextly.Loader = Contextly.createClass({
         if ( !this.isCallAvailable() ) return;
 
         var self = this;
-
-        if ( Contextly.Settings.getInstance().isAdmin() )
-        {
-            jQuery(document).ready(
-                function ()
-                {
-                    Contextly.Utils.getInstance().disableAdminButtons();
-                }
-            );
-        }
-
         Contextly.RESTClient.getInstance().call(
             'pagewidgets',
             'get',
@@ -103,27 +92,6 @@ Contextly.Loader = Contextly.createClass({
                 pageView.display();
 
                 self.initCookie( response );
-            }
-        );
-    },
-
-    trackPageEvent: function ( setting_id, event_name, event_key ) {
-        if ( !this.isCallAvailable() ) return;
-
-        var event_data = {
-            'post_id'   : Contextly.Settings.getInstance().getPageId(),
-            'setting_id': setting_id,
-            'event_name': event_name,
-            'event_key' : event_key,
-            'event_date': new Date(),
-            'cookie_id' : this.getCookieId()
-        };
-
-        Contextly.RESTClient.getInstance().call(
-            'siteevents',
-            'put',
-            event_data,
-            function ( response ) {
             }
         );
     },
@@ -186,8 +154,6 @@ Contextly.PageView = Contextly.createClass({
         // Check if we have error on page
         if ( this.isError() && Contextly.Settings.getInstance().isAdmin() ) {
             var message = '';
-            var url = 'admin.php?page=contextly_options&tab=contextly_options_api';
-
             if ( this.error.error ) {
                 if ( this.error.error_code == Contextly.Errors.ERROR_FORBIDDEN ) {
                     message = this.error.error + " Please check your API settings on the Contextly plugin <a href='admin.php?page=contextly_options&tab=contextly_options_api'>Settings</a> page.";
@@ -202,71 +168,26 @@ Contextly.PageView = Contextly.createClass({
 
             var snippet_formatter = new Contextly.SnippetWidgetFormatter();
             snippet_formatter.displayText( message );
-
-            Contextly.PopupHelper.getInstance().initWithUrl( url );
-        } else if ( this.entry ) {
-            // Init popup helper
-            Contextly.PopupHelper.getInstance().initWithWidget( this.entry );
-
-            // Display widgets
-            if ( this.entry.snippets && this.entry.snippets.length > 0 ) {
-                this.displayWidgets( this.entry.snippets );
-            }
-            if ( this.entry.sidebars && this.entry.sidebars.length > 0 ) {
-                this.displayWidgets( this.entry.sidebars );
-            }
-            if ( this.entry.auto_sidebars && this.entry.auto_sidebars.length > 0 ) {
-                this.displayWidgets( this.entry.auto_sidebars );
-            }
-
-            // Check if we need to update this post in our DB
-            if ( !Contextly.Settings.getInstance().isAdmin() ) {
-                this.checkPost();
-            }
         }
-
-        if ( Contextly.Settings.getInstance().isAdmin() ) {
-            this.attachPublishConfirmation();
-            Contextly.Utils.getInstance().enableAdminButtons();
-        }
-    },
-
-    attachPublishConfirmation: function () {
-        jQuery( '#publish' ).click(
-            function() {
-                var wp_settings = Contextly.Settings.getInstance().getWPSettings();
-
-                if ( wp_settings.publish_confirmation ) {
-                    if ( Contextly.Loader.getInstance().isWidgetHasLinks() ) {
-                        return true;
-                    } else {
-                        Contextly.PopupHelper.getInstance().showPublishConfirmation();
-                        return false;
-                    }
+        else
+        {
+            if ( this.entry ) {
+                // Display widgets
+                if ( this.entry.snippets && this.entry.snippets.length > 0 ) {
+                    this.displayWidgets( this.entry.snippets );
+                }
+                if ( this.entry.sidebars && this.entry.sidebars.length > 0 ) {
+                    this.displayWidgets( this.entry.sidebars );
+                }
+                if ( this.entry.auto_sidebars && this.entry.auto_sidebars.length > 0 ) {
+                    this.displayWidgets( this.entry.auto_sidebars );
                 }
 
-                return true;
+                if ( this.entry.update )
+                {
+                    this.updatePost();
+                }
             }
-        );
-    },
-
-    checkPost: function () {
-        var update = false;
-
-        // Now we can check last post publish date and probably we need to publish/update this post in our db
-        if ( !this.entry.created_date ) {
-            update = true;
-        } else {
-            var created_date_cmp = Contextly.Utils.getInstance().isPostNeedsToBeUpdated( this.entry.created_date, Contextly.Settings.getInstance().getPostCreatedDate() );
-            var modified_date_cmp = Contextly.Utils.getInstance().isPostNeedsToBeUpdated( this.entry.modified_date, Contextly.Settings.getInstance().getPostModifiedDate() );
-
-            if ( created_date_cmp || modified_date_cmp ) {
-                update = true;
-            }
-        }
-
-        if ( update ) {
-            this.updatePost();
         }
     },
 
@@ -453,17 +374,6 @@ Contextly.SnippetWidgetFormatter = Contextly.createClass({
         this.getDisplayElement().append( text );
     },
 
-    displayAdminControls: function () {
-        var controls = '';
-        if ( this.hasWidgetData() ) {
-            controls = "<br><input type='button' class='button action' value='Edit Related Posts' onclick='Contextly.PopupHelper.getInstance().snippetPopup();' disabled='disabled' id='ctx-choose-related-btn' />";
-            this.appendText( controls );
-        } else {
-            controls = "<input type='button' class='button action' value='Choose Related Posts' onclick='Contextly.PopupHelper.getInstance().snippetPopup();' disabled='disabled' id='ctx-choose-related-btn' />";
-            this.displayText( controls );
-        }
-    },
-
     isDisplaySection: function ( section ) {
         var display_section = jQuery.inArray( section, this.widget.settings.display_sections ) != -1;
         var have_to_display = this.widget.links && this.widget.links[ section ] && this.widget.links[ section ].length > 0;
@@ -486,39 +396,135 @@ Contextly.SnippetWidgetFormatter = Contextly.createClass({
                 this.getDisplayElement().attr( 'widget-type', settings.display_type );
             }
 
-            this.attachVideoPopups();
+            this.attachVideoLinkPopups();
         }
-
-        if ( Contextly.Settings.getInstance().isAdmin() ) {
-            this.displayAdminControls();
-        }
+		else
+		{
+			// Hide content of the snippet placeholder (e.g. Loading...)
+			this.getDisplayElement()
+				.empty();
+		}
 
         this.setResponsiveFunction();
     },
 
-    attachVideoPopups: function () {
-        jQuery("a[rel='ctx_video_link']").each(
-            function () {
-                jQuery( this ).prettyPhoto({animation_speed:'fast',slideshow:10000, hideflash: true});
-                jQuery( this ).click(
-                    function () {
-                        var contextly_url = jQuery( this).attr( 'contextly-url' );
-                        Contextly.MainServerAjaxClient.getInstance().call( contextly_url );
-                    }
-                );
+    attachVideoLinkPopups: function () {
+        jQuery( "a[rel='ctx-video-dataurl']" ).click(function(e) {
+            e.preventDefault();
+            var self = jQuery( this );
+            var videoUrl = getVideoUrl( self );
+            var videoTitle = getVideoTitle( self );
+            openVideoPopup( videoUrl, videoTitle);
+
+            var contextly_url = getContextlyUrl( self );
+            Contextly.MainServerAjaxClient.getInstance().call( contextly_url );
+        });
+
+        function getVideoClass() {
+            return "ctx-video-modal";
+        }
+        function videoOverlay() {
+            return "ctx-video-overlay";
+        }
+        function getCloseClass() {
+            return "ctx-video-close";
+        }
+        function getVideoUrl( getEvent) {
+            return getEvent.attr('href');
+        }
+        function getContextlyUrl( getEvent) {
+            return getEvent.attr('contextly-url');
+        }
+        function getVideoTitle( getEvent) {
+            return getEvent.attr('title');
+        }
+        function openVideoPopup( ctxVideoUrl, videoTitle ) {
+            jQuery('body').append( createVideoTmp( ctxVideoUrl, videoTitle ) );
+            showVideoPopup();
+        }
+        function showVideoPopup() {
+            modalFadeIn( getVideoClass() );
+            modalFadeIn( videoOverlay() );
+            modalClose();
+        }
+        function modalFadeIn( elClass ) {
+            jQuery( "." + elClass ).fadeIn("fast");
+        }
+        function modalClose() {
+            closeVideoEvent();
+            closeModalEsc();
+            closeModalBg();
+        }
+        function createVideoTmp( ctxVideoUrl, videoTitle ) {
+            var videoLink = getEmbedLink( ctxVideoUrl );
+            var videoId = linkFormatter( 'v',ctxVideoUrl );
+            var videoClass = getVideoClass();
+            var videotmp = '<div class="' + videoClass + '">' +
+                '<iframe src="' + videoLink + '" frameborder="no" class="ctx-video-frame"></iframe>' +
+                '<div class="ctx-video-loading" ></div>' +
+                '<p class="ctx-video-title">' + videoTitle + '</p>' +
+                '<a  href="#" class="ctx-video-close">&#215;</a>' +
+                '<div class="ctx-modal-social">' + facebookLike( ctxVideoUrl )+ twitterIframe( videoId, videoTitle ) + '</div>' +
+                '</div>' +
+                '<div class="' + videoOverlay() + '" /></div>';
+            return videotmp;
+        }
+        function facebookLike( ctxVideoUrl ) {
+            var script = '<iframe src="//www.facebook.com/plugins/like.php?href=' + ctxVideoUrl +
+                '&amp;width=100&amp;layout=button&amp;action=like&amp;show_faces=true&amp;share=true&amp;height=20" scrolling="no" frameborder="0" style="border:none; overflow:hidden; width:100px; height:20px;" allowTransparency="true"></iframe>';
+            return script;
+        }
+        function twitterIframe( videoId, videoTitle ) {
+            var script = "<iframe allowtransparency='true' frameborder='0' scrolling='no' src='http://platform.twitter.com/widgets/tweet_button.html?text=" + videoTitle + "&url=https%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3D" + videoId + "' style='width:98px; height:20px;'></iframe>";
+            return script;
+        }
+        function getEmbedLink( ctxVideoUrl ) {
+            return formattedYoutubeLink( ctxVideoUrl );
+        }
+        function formattedYoutubeLink( videoUrl ) {
+            videoId = linkFormatter('v',videoUrl);
+            fullLink = 'http://www.youtube.com/embed/' + videoId + "?rel=1&autoplay=1";
+            return fullLink;
+        }
+        function linkFormatter(name,url){
+            name = name.replace(/[\[]/,"\\\[").replace(/[\]]/,"\\\]");
+            var regexS = "[\\?&]"+name+"=([^&#]*)";
+            var regex = new RegExp( regexS );
+            var results = regex.exec( url );
+            return ( results == null ) ? "" : results[1];
+        }
+        function closeVideoModal( ) {
+            modalFadeOut( getVideoClass() );
+            modalFadeOut( videoOverlay() );
+        }
+        function modalFadeOut( elClass ) {
+            var removeEle = function() {
+                jQuery(this).remove();
             }
-        );
+            jQuery( "." + elClass ).fadeOut( "fast", removeEle);
+        }
+        function closeVideoEvent() {
+            jQuery( "." + getCloseClass() ).click(function(e) {
+                e.preventDefault();
+                closeVideoModal();
+            });
+        }
+        function closeModalEsc() {
+            jQuery('body').keyup(function(e) {
+                if(e.which===27){ closeVideoModal(); }
+            });
+        }
+        function closeModalBg() {
+            jQuery( "." + videoOverlay() ).click(function(e) {
+                closeVideoModal();
+            });
+        }
     },
 
     loadCss: function ( contextly_id ) {
         var css_url = this.getWidgetCSSUrl();
 
         Contextly.Utils.getInstance().loadCssFile( css_url, contextly_id );
-
-        if ( Contextly.Utils.getInstance().isIE7() ) {
-            var css_ie7fix = Contextly.Settings.getInstance().getCdnCssUrl() + "_plugin/"  + Contextly.Settings.getInstance().getPluginVersion() +  "/css/template-ie-fix.css";
-            Contextly.Utils.getInstance().loadCssFile( css_ie7fix, 'widget-ie-fix' );
-        }
 
         // Make needed css rules and load custom widget css
         var custom_css = this.getCustomCssCode();
@@ -639,7 +645,7 @@ Contextly.SnippetWidgetFormatter = Contextly.createClass({
 
     getVideoIcon: function ( is_video ) {
         if ( is_video ) {
-            var videoIcon='<i class="fa fa-youtube-play"></i>';
+            var videoIcon='<span class="ctx-video-icon"></span>';
         } else {
             var videoIcon = "";
         }
@@ -678,7 +684,7 @@ Contextly.SnippetWidgetFormatter = Contextly.createClass({
             var videoIcon = "";
         }
 
-        return "<a rel=\"ctx_video_link\" class='ctx-clearfix ctx-nodefs' href=\"" +
+        return "<a rel=\"ctx-video-dataurl\" class='ctx-clearfix ctx-nodefs' href=\"" +
             this.escape( link.native_url ) + "\" title=\"" +
             this.escape( link.title ) + "\" contextly-url=\"" + link.url + "\" " +
             this.getOnclickHtml( link ) + ">" +
@@ -720,7 +726,6 @@ Contextly.SnippetWidgetFormatter = Contextly.createClass({
     setResponsiveFunction: function() {
 
         function ctxResponsiveResizeHandler() {
-
             // Blocks2
             var mobileModule = 400;
             var normalModule = 650;
@@ -773,18 +778,20 @@ Contextly.SnippetWidgetFormatter = Contextly.createClass({
                 return widgetType;
             }
 
-            function removeExtraLinks() {
-                jQuery(".ctx-link-additional-4").remove();
-                jQuery(".ctx-link-additional-5").remove();
-                jQuery(".ctx-link-additional-6").remove();
-            }
+            function extraLinksAction( linkNumberArray, linkCondition ) {
 
-            function removeExtraLink1() {
-                jQuery(".ctx-link-additional-5").remove();
-            }
+                if( linkCondition == "show" ) {
+                    var dispCond = "block";
+                    var visCond = "visible";
+                } else if( linkCondition == "hide" ) {
+                    var dispCond = "none";
+                    var visCond = "hidden";
+                }
 
-            function removeExtraLink2() {
-                jQuery(".ctx-link-additional-6").remove();
+                for( var keys in linkNumberArray ) {
+                    jQuery( ".ctx-link-additional-" + linkNumberArray ).css( "display", dispCond );
+                    jQuery( ".ctx-link-additional-" + linkNumberArray ).css( "visibility", visCond );
+                }
             }
 
             function respClassChanger( respClass, baseClass ) {
@@ -802,56 +809,55 @@ Contextly.SnippetWidgetFormatter = Contextly.createClass({
             if(getWidgetType() == 'blocks' ) {
                 if(getBlocksWidth() < mobileModuleBl) {
                     respClassChanger( "ctx-module-mobile", "ctx-content-block" );
-                    removeExtraLink1();
-                    removeExtraLink2();
+                    extraLinksAction( [5, 6], "hide" );
                 } else if(getBlocksWidth() <= tabletModuleBl && getBlocksWidth() >= mobileModuleBl) {
                     respClassChanger( "ctx-module-tablet", "ctx-content-block" );
-                    removeExtraLink1();
-                    removeExtraLink2();
+                    extraLinksAction( [5, 6], "hide" );
                 } else if(getBlocksWidth() <= normalModuleBl && getBlocksWidth() >= tabletModuleBl) {
-                    removeExtraLink1();
-                    removeExtraLink2();
+                    extraLinksAction( [5, 6], "hide" );
                     respClassChanger( "ctx-module-default", "ctx-content-block" );
                 } else if(getBlocksWidth() > normalModuleBl && getBlocksWidth() <= wideModuleBl) {
                     respClassChanger( "ctx-module-sec5", "ctx-content-block" );
-                    removeExtraLink2();
+                    extraLinksAction( [6], "hide" );
+                    extraLinksAction( [5], "show" );
                 } else if(getBlocksWidth() > wideModuleBl) {
                     respClassChanger( "ctx-module-sec6", "ctx-content-block" );
+                    extraLinksAction( [5, 6], "show" );
                 }
             }
 
             // Blocks2
             if(getWidgetType() == 'blocks2' ) {
                 if(getBlocks2Width() < mobileModule) {
-                    removeExtraLink1();
-                    removeExtraLink2();
+                    extraLinksAction( [5, 6], "hide" );
                     respClassChanger( "ctx-module-mobile", "ctx-content-block2" );
                 } else if(getBlocks2Width() <= normalModule && getBlocks2Width() >= mobileModule) {
-                    removeExtraLink1();
-                    removeExtraLink2();
+                    extraLinksAction( [5, 6], "hide" );
                     respClassChanger( "ctx-module-default", "ctx-content-block2" );
                 } else if(getBlocks2Width() > normalModule && getBlocks2Width() <= wideModule) {
-                    removeExtraLink2();
+                    extraLinksAction( [6], "hide" );
+                    extraLinksAction( [5], "show" );
                     respClassChanger( "ctx-module-sec5", "ctx-content-block2" );
                 } else if(getBlocks2Width() > wideModule) {
                     respClassChanger( "ctx-module-sec6", "ctx-content-block2" );
+                    extraLinksAction( [5, 6], "show" );
                 }
             }
 
             // Float
             if(getWidgetType() == 'float' ) {
                 if(getFloatWidth() < mobileModuleFl) {
-                    removeExtraLinks();
+                    extraLinksAction( [4, 5, 6], "hide" );
                     respClassChanger( "ctx-module-mobile", "ctx-content-float" );
                 } else if(getFloatWidth() <= mediumModuleFl && getFloatWidth() >= mobileModuleFl) {
-                    removeExtraLinks();
+                    extraLinksAction( [4, 5, 6], "hide" );
                     respClassChanger( "ctx-module-medium", "ctx-content-float" );
                 } else if(getFloatWidth() > mediumModuleFl && getFloatWidth() <= normalModuleFl) {
-                    removeExtraLinks();
+                    extraLinksAction( [4, 5, 6], "hide" );
                     respClassChanger( "ctx-module-normal", "ctx-content-float" );
                 } else if(getFloatWidth() > normalModuleFl) {
-                    removeExtraLink1();
-                    removeExtraLink2();
+                    extraLinksAction( [5, 6], "hide" );
+                    extraLinksAction( [4], "show" );
                     respClassChanger( "ctx-module-wide", "ctx-content-float" );
                 }
             }
@@ -970,42 +976,24 @@ Contextly.SnippetWidgetFormatter = Contextly.createClass({
             return content;
         }
 
-        function ctxCheckIfWidgetLoadedAndResize() {
-            documentLoadCheckCount++;
+        ctxResponsiveResizeHandler();
 
+        jQuery(window).resize(function() {
             ctxResponsiveResizeHandler();
-            ctxClearIfWidgetLoadedInterval();
-
-            if ( documentLoadCheckCount > 10 ) {
-                ctxClearIfWidgetLoadedInterval();
-            }
-        }
-
-        function ctxClearIfWidgetLoadedInterval() {
-            if ( documentLoadInterval ) {
-                clearInterval( documentLoadInterval );
-            }
-        }
-
-        jQuery(window).resize(
-            function() {
-                ctxResponsiveResizeHandler();
-            }
-        );
+        });
 
         var documentLoadInterval = null;
         var documentLoadCheckCount = 0;
 
-        jQuery(document).ready(
-            function() {
-                documentLoadInterval = self.setInterval(
-                    function () {
-                        ctxCheckIfWidgetLoadedAndResize();
-                    },
-                    500
-                );
+        documentLoadInterval = self.setInterval(function () {
+            documentLoadCheckCount++;
+
+            ctxResponsiveResizeHandler();
+
+            if ( documentLoadCheckCount > 5 ) {
+                clearInterval( documentLoadInterval );
             }
-        );
+        }, 500 );
     }
 
 });
@@ -1034,7 +1022,19 @@ Contextly.CssCustomBuilder = Contextly.createClass({
         }
 
         return(value);
-    }
+    },
+
+    oppositeColorGenerator: function( hexTripletColor ) {
+        var color = hexTripletColor;
+        color = color.substring(1);
+        color = parseInt(color, 16);
+        color = 0xFFFFFF ^ color;
+        color = color.toString(16);
+        color = ("000000" + color).slice(-6);
+        color = "#" + color;
+        return color;
+    },
+
 });
 
 //////////////////////////////////////////////////////////////
@@ -1050,6 +1050,14 @@ Contextly.SnippetWidgetTextFormatter = Contextly.createClass({
 
     getWidgetHTML: function () {
         var div = "";
+
+        var sections = this.widget.settings.display_sections;
+
+        if( sections.length == 1 ) {
+            this.addColumnCounterClass( "ctx-text-column-one" );
+        } else {
+            this.addColumnCounterClass( "ctx-text-column-multiple" );
+        }
 
         div += "<div class='" + this.getWidgetCssName() + " ctx-nodefs'>";
         div += "<div class='ctx-sections-container ctx-clearfix'>";
@@ -1080,6 +1088,11 @@ Contextly.SnippetWidgetTextFormatter = Contextly.createClass({
         }
 
         return div;
+    },
+
+    addColumnCounterClass: function( className ) {
+        var getModuleId = this.widget_html_id;
+        jQuery( "#" + getModuleId).addClass( className );
     },
 
     getLinksHTMLOfType: function( type ) {
@@ -1115,7 +1128,14 @@ Contextly.TextWidgetCssCustomBuilder = Contextly.createClass({
         if ( settings.font_family ) css_code += this.buildCSSRule( entry, ".ctx-content-text .ctx-links-content a" , "font-family", settings.font_family );
         if ( settings.font_size ) css_code += this.buildCSSRule( entry, ".ctx-content-text .ctx-links-content a" , "font-size", settings.font_size );
         if ( settings.color_links ) {
+
+            var getOppositeColor = this.oppositeColorGenerator(settings.color_links);
+            css_code += this.buildCSSRule( entry, ".ctx-link .ctx-video-icon" , "background-color", settings.color_links );
+            css_code += this.buildCSSRule( entry, ".ctx-link .ctx-video-icon:after" , "border-left-color", getOppositeColor );
+
             css_code += this.buildCSSRule( entry, ".ctx-content-text .ctx-links-content a" , "color", settings.color_links );
+
+            css_code += this.buildCSSRule( entry, ".ctx-links-content .ctx-link:before" , "background-color", settings.color_links );
         }
         if ( settings.color_background ) {
             css_code += this.buildCSSRule( entry, ".ctx-content-text .ctx-links-header" , "background-color", settings.color_background );
@@ -1248,6 +1268,10 @@ Contextly.BlocksWidgetCssCustomBuilder = Contextly.createClass({
 
         if ( settings.color_links ) {
             css_code += this.buildCSSRule( entry, ".ctx-content-block .ctx-link-title p" , "color", settings.color_links );
+
+            var getOppositeColor = this.oppositeColorGenerator(settings.color_links);
+            css_code += this.buildCSSRule( entry, ".ctx-link-title .ctx-video-icon" , "background-color", settings.color_links );
+            css_code += this.buildCSSRule( entry, ".ctx-link-title .ctx-video-icon:after" , "border-left-color", getOppositeColor );
         }
 
         if ( settings.color_background ) {
@@ -1291,6 +1315,8 @@ Contextly.SnippetWidgetBlocks2Formatter = Contextly.createClass({
             + this.getVideoIcon( is_video ) + " " + link.title + "</p></div>";
 
         return inner_html;
+
+
     },
 
     getLinkHTMLVideo: function ( link, linkCounter ) {
@@ -1319,6 +1345,10 @@ Contextly.Blocks2WidgetCssCustomBuilder = Contextly.createClass({
 
         if ( settings.color_links ) {
             css_code += this.buildCSSRule( entry, ".ctx-content-block2 .ctx-link-title p" , "color", settings.color_links );
+
+            var getOppositeColor = this.oppositeColorGenerator(settings.color_links);
+            css_code += this.buildCSSRule( entry, ".ctx-link-title .ctx-video-icon" , "background-color", settings.color_links );
+            css_code += this.buildCSSRule( entry, ".ctx-link-title .ctx-video-icon:after" , "border-left-color", getOppositeColor );
         }
 
         if ( settings.color_background ) {
@@ -1380,6 +1410,10 @@ Contextly.FloatWidgetCssCustomBuilder = Contextly.createClass({
 
         if ( settings.color_links ) {
             css_code += this.buildCSSRule( entry, ".ctx-content-float .ctx-link-title p" , "color", settings.color_links );
+
+            var getOppositeColor = this.oppositeColorGenerator(settings.color_links);
+            css_code += this.buildCSSRule( entry, ".ctx-link-title .ctx-video-icon" , "background-color", settings.color_links );
+            css_code += this.buildCSSRule( entry, ".ctx-link-title .ctx-video-icon:after" , "border-left-color", getOppositeColor );
         }
 
         if ( settings.color_background ) {
@@ -1410,6 +1444,14 @@ Contextly.SidebarWidgetFormatter = Contextly.createClass({
         return "<div class='ctx-content-sidebar'><div class='ctx-sb-content'>"
             + this.getLinksHTMLOfType( 'previous' )
             + "</div></div>";
+    },
+
+    getLinkATag: function ( link, content ) {
+
+        return "<a href=\"" +
+            this.escape( link.native_url ) + "\" title=\"" +
+            this.escape( link.title ) + "\" class='ctx-clearfix ctx-nodefs ctx-no-images' onmousedown=\"this.href='" +
+            this.escape( link.url ) + "'\" " + this.getOnclickHtml( link ) + ">" + " " + content + "</a>";
     },
 
     getLinkHTML: function ( link ) {
@@ -1465,30 +1507,29 @@ Contextly.SidebarWidgetFormatter = Contextly.createClass({
         var self = this;
 
         jQuery( document ).ready(
-            function () {
-                if ( self.hasWidgetData() && !Contextly.Settings.getInstance().isAdmin() ) {
-                    // Build widget html and display it
-                    var html = self.getWidgetHTML();
-                    self.displayText( html );
+        function () {
+            if ( self.hasWidgetData() && !Contextly.Settings.getInstance().isAdmin() ) {
+                // Build widget html and display it
+                var html = self.getWidgetHTML();
+                self.displayText( html );
 
-                    // Do some sidebar modifications
-                    self.getDisplayElement().removeClass( 'ctx-sidebar-container' )
-                        .addClass( 'ctx-sidebar' )
-                        .addClass( 'ctx-sidebar-' + self.widget.layout )
-                        .addClass( 'ctx-sb-clearfix' );
+                // Do some sidebar modifications
+                self.getDisplayElement().removeClass( 'ctx-sidebar-container' )
+                    .addClass( 'ctx-sidebar' )
+                    .addClass( 'ctx-sidebar-' + self.widget.layout )
+                    .addClass( 'ctx-sb-clearfix' );
 
-                    // Check if we need to add sidebar title and description
-                    var title = self.widget.name;
-                    var description = self.widget.description;
-                    var sidebar_content = self.getDisplayElement().find( '.ctx-content-sidebar' );
+                // Check if we need to add sidebar title and description
+                var title = self.widget.name;
+                var description = self.widget.description;
+                var sidebar_content = self.getDisplayElement().find( '.ctx-content-sidebar' );
 
-                    if ( description ) sidebar_content.prepend( "<div class='ctx-sb-description'><p>" + self.escape( description ) + "</p></div>" );
-                    if ( title ) sidebar_content.prepend( "<div class='ctx-sb-title'><p>" + self.escape( title ) + "</p></div>" );
+                if ( description ) sidebar_content.prepend( "<div class='ctx-sb-description'><p>" + self.escape( description ) + "</p></div>" );
+                if ( title ) sidebar_content.prepend( "<div class='ctx-sb-title'><p>" + self.escape( title ) + "</p></div>" );
 
-                    self.loadCss( 'sidebar-css' );
-                }
+                self.loadCss( 'sidebar-css' );
             }
-        );
+        });
     },
 
     getWidgetCSSUrl: function () {
@@ -1590,41 +1631,6 @@ Contextly.Utils = Contextly.createClass({
         }
     },
 
-    stringToDate: function( mysql_date ) {
-        var dateParts = mysql_date.split(' ')[0].split('-');
-        var timeParts = mysql_date.split(' ')[1].split(':');
-        var date = new Date(dateParts[0], dateParts[1], dateParts[2]);
-        date.setHours(timeParts[0], timeParts[1], timeParts[2])
-
-        return date;
-    },
-
-    isPostNeedsToBeUpdated: function ( db_date, cms_post_date ) {
-        if ( db_date != cms_post_date ) {
-            var post_date = Contextly.Utils.getInstance().stringToDate( cms_post_date );
-            var cur_date = new Date().getTime();
-
-            var diff = Math.abs( ( cur_date - post_date ) / 1000 );
-            var allowed_diff = 60 * 60 * 24 * 365 * 3; // 3 years
-
-            // Don't allow to update very old posts
-            if ( diff <= allowed_diff ) {
-                return true;
-            }
-        }
-
-        return false;
-    },
-
-    isIE7: function () {
-        if( navigator.userAgent.match( /MSIE ([0-9]+)\./ ) ) {
-            if ( RegExp.$1 < 8 ) {
-                return true;
-            }
-        }
-        return false;
-    },
-
     loadCssFile: function ( css_url, contextly_id ) {
         if ( contextly_id ) {
             // Remove previously loaded script
@@ -1660,38 +1666,13 @@ Contextly.Utils = Contextly.createClass({
                 .replace(/"/g, "&quot;")
                 .replace(/'/g, "&#039;");
         }
-
-
-        return '';
-    },
-
-    enableAdminButtons: function ()
-    {
-        jQuery('#ctx-choose-related-main-btn').removeAttr( 'disabled' );
-        jQuery('#ctx-choose-related-btn').removeAttr( 'disabled' );
-        this.toggleAdminEditorButtons(false);
-    },
-
-    disableAdminButtons: function ()
-    {
-        jQuery('#ctx-choose-related-main-btn').attr( 'disabled', 'disabled' );
-        jQuery('#ctx-choose-related-btn').attr( 'disabled', 'disabled' );
-        this.toggleAdminEditorButtons(true);
-    },
-
-    toggleAdminEditorButtons: function (state)
-    {
-        if ( tinymce && tinymce.activeEditor )
-        {
-            tinymce.activeEditor.controlManager.setDisabled('contextlylink', state);
-            tinymce.activeEditor.controlManager.setDisabled('contextlysidebar', state);
-        }
-    }
-
+		return '';
+	}
 });
 
 Contextly.PageEvents = Contextly.createClass({
     extend: Contextly.Singleton,
+
     trackLink: function ( widget_type, link_type, link_title ) {
         if ( !widget_type || !link_type || !link_title ) return;
 
@@ -1746,8 +1727,8 @@ Contextly.Settings = Contextly.createClass({
     getMainServerUrl: function () {
         return Contextly.main_server;
     },
-    getPopupServerUrl: function () {
-        return Contextly.popup_server;
+    getEditorUrl: function () {
+        return Contextly.editor_url;
     },
     getPluginVersion: function () {
         return Contextly.version;
@@ -1781,11 +1762,23 @@ Contextly.Settings = Contextly.createClass({
         var post_data = this.getPostData();
         return post_data.url;
     },
+    getPostType: function () {
+        var post_data = this.getPostData();
+        return post_data.type;
+    },
     getWPSettings: function () {
         return Contextly.settings;
     },
     isHttps: function () {
         return Contextly.https;
+    },
+    getPostCategories: function () {
+        var post_data = this.getPostData();
+        return post_data.categories;
+    },
+    getPostTags: function () {
+        var post_data = this.getPostData();
+        return post_data.tags;
     },
     getCdnCssUrl: function () {
         if ( this.isHttps() ) {
@@ -1849,7 +1842,12 @@ Contextly.RESTClient = Contextly.createClass({
                 site_path:  contextly_settings.getAppId(),
                 admin:      contextly_settings.isAdmin(),
                 page_id:    contextly_settings.getPageId(),
-                cookie_id:  Contextly.Loader.getInstance().getCookieId()
+                cookie_id:  Contextly.Loader.getInstance().getCookieId(),
+                type:       contextly_settings.getPostType(),
+                c_date:  Contextly.Settings.getInstance().getPostCreatedDate(),
+                m_date:  Contextly.Settings.getInstance().getPostModifiedDate(),
+                c_count:  Contextly.Settings.getInstance().getPostCategories().length,
+                t_count:  Contextly.Settings.getInstance().getPostTags().length
             }
         );
 
@@ -1921,182 +1919,6 @@ Contextly.MainServerAjaxClient = Contextly.createClass({
                 }
             }
         );
-    }
-
-});
-
-Contextly.PopupHelper = Contextly.createClass({
-    extend: Contextly.Singleton,
-
-    construct: function() {
-        this.popup_socket   = null;
-    },
-
-    initWithWidget: function ( widget ) {
-        this.widget         = widget;
-        this.snippet        = null;
-
-        if ( widget && widget.snippets && widget.snippets.length ) {
-            var snippet = widget.snippets[0];
-
-            if ( snippet.id ) {
-                this.snippet = snippet;
-            }
-        }
-    },
-
-    initWithUrl: function ( url ) {
-        this.url = url;
-    },
-
-    snippetPopup: function () {
-        if ( this.url || !this.widget ) {
-            this.showStubPopup();
-            return;
-        }
-
-        var settings = Contextly.Settings.getInstance();
-        var popup_url = settings.getPopupServerUrl()
-            + 'sites/' + settings.getAppId() + '/'
-            + '?page_id=' + settings.getPageId()
-            + '&author=' + settings.getAuthorId()
-            + '&edit_snippet_id=' + ( this.snippet ? this.snippet.id : '' );
-
-        this.openPopupWithCallback(
-            popup_url,
-            function ( response ) {
-                Contextly.Loader.getInstance().load();
-            }
-        );
-    },
-
-    sidebarPopup: function ( snippet_id ) {
-        if ( this.url || !this.widget ) {
-            this.showStubPopup();
-            return;
-        }
-
-        var settings = Contextly.Settings.getInstance();
-        var popup_url = settings.getPopupServerUrl()
-            + 'sites/' + settings.getAppId() + '/sidebar/'
-            + '?page_id=' + settings.getPageId()
-            + '&sidebar_id=' + ( snippet_id ? snippet_id : '' );
-
-        this.openPopupWithCallback(
-            popup_url,
-            function ( response ) {
-                if ( response.status == 'ok' && response.snippet_id ) {
-                    var api_response = response.data;
-
-                    if ( api_response.entry && api_response.entry.type == Contextly.WidgetType.AUTO_SIDEBAR ) {
-                        send_to_editor( '[contextly_auto_sidebar id="' + response.snippet_id + '"]' );
-                    } else {
-                        send_to_editor( '[contextly_sidebar id="' + response.snippet_id + '"]' );
-                    }
-
-                    Contextly.Loader.getInstance().load();
-                }
-            }
-        );
-    },
-
-    linkPopup: function () {
-        if ( this.url || !this.widget ) {
-            this.showStubPopup();
-            return;
-        }
-
-        var settings = Contextly.Settings.getInstance();
-        var popup_url = settings.getPopupServerUrl()
-            + 'sites/' + settings.getAppId() + '/'
-            + '?page_id=' + settings.getPageId()
-            + '&edit_snippet_id=' + ( this.snippet ? this.snippet.id : '' )
-            + '&tinymce_link_text=' + tinymce.plugins.ContextlyPluginLink.getSelectedText();
-
-        this.openPopupWithCallback(
-            popup_url,
-            function ( response ) {
-                if ( response.status == 'ok' ) {
-                    Contextly.Loader.getInstance().load();
-                    tinymce.activeEditor.plugins.contextlylink.insertLink( response.link_url, response.link_title );
-                }
-            }
-        );
-    },
-
-    openPopupWithCallback: function ( popup_url, callback ) {
-        window.open(
-            popup_url + '#easyXDM_linker_channel_provider',
-            'contextlyapp',
-            'width=1150,height=600,resizable=1,scrollbars=1,menubar=1'
-        );
-
-        if ( callback ) {
-            if ( this.popup_socket != null ) {
-                this.popup_socket.destroy();
-            }
-
-            this.popup_socket = new easyXDM.Socket({
-                channel: 'linker_channel',
-                remote: Contextly.Settings.getInstance().getPopupServerUrl() + '/resources/html/remote.html',
-                onMessage: function( data, origin ) {
-                    if ( data ) {
-                        var json_data = easyXDM.getJSONObject().parse( data );
-                        callback( json_data );
-                    }
-                }
-            });
-        }
-    },
-
-    showStubPopup: function () {
-        this.url = this.url || 'http://contextly.com/contact-us/?type=undefined&key=' + Contextly.Settings.getInstance().getAppId();
-        window.open( this.url );
-    },
-
-    showPublishConfirmation: function () {
-        var popup_id = 'contextly_publish_confirmation';
-        var contextly_add_related_links_btn = 'contextly_add_related_links_btn';
-        var contextly_publish_now_btn = 'contextly_publish_now_btn';
-
-        var popup_width = 420;
-        var popup_height = 150;
-
-        var title = 'Publish confirmation';
-        var publish_button_value = jQuery( '#publish').attr( "value" );
-        var add_related_button_value = "Choose Related Posts";
-
-        jQuery( '.button-primary' ).removeClass( 'button-primary-disabled' );
-        jQuery( 'span.spinner').hide();
-
-        jQuery( "body" ).append(
-            jQuery(
-                '<div id="' + popup_id + '" style="display:none;">' +
-                    "<div style='float:left; padding:10px;'>This post doesn't have any chosen links to other posts. Would you like to do that now?<br /><br /> If you want to add a sidebar, close this window, put the cursor where you'd like the sidebar to be and click the sidebar button.</div>" +
-                    '<input id="contextly_add_related_links_btn" type="button" value="' + add_related_button_value + '" class="button button-primary" />' +
-                    '<input id="contextly_publish_now_btn" type="button" value="' + publish_button_value + '" class="button" style="margin-left: 20px; float: right;" />' +
-                    '</div>'
-            )
-        );
-
-        jQuery( '#' + contextly_add_related_links_btn ).click(
-            function () {
-                tb_remove();
-                Contextly.PopupHelper.getInstance().snippetPopup();
-            }
-        );
-
-        jQuery( '#' + contextly_publish_now_btn ).click(
-            function () {
-                tb_remove();
-                jQuery( '#publish').unbind( 'click' );
-                jQuery( '#publish').click();
-            }
-        );
-
-        tb_show( title, "#TB_inline?height=" + popup_height + "&amp;width=" + popup_width + "&amp;inlineId=" + popup_id );
-        jQuery("#TB_window").width( popup_width + 30 );
-        jQuery("#TB_window").height( popup_height + 20 );
     }
 
 });
