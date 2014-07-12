@@ -1,0 +1,9 @@
+{
+	"require": {
+    "monolog/monolog": "1.7.*@dev",
+		"rackspace/php-opencloud": "dev-master",
+    "sabberworm/php-css-parser": "*",
+    "symfony/filesystem": "2.5.*@dev",
+    "symfony/console": "2.5.*@dev"
+	}
+}
