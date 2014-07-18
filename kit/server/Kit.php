@@ -147,7 +147,7 @@ class ContextlyKit {
 
   function isDevMode() {
     // TODO Optimize all 3 functions to avoid comparing strings each time over and over again.
-    return $this->settings->mode === 'dev';
+    return $this->settings->mode === 'dev' || $this->settings->mode === 'local';
   }
 
   function isLiveMode() {
@@ -180,14 +180,17 @@ class ContextlyKit {
       'main' => array(
         'dev' => 'http://dev.contextly.com/',
         'live' => 'http://contextly.com/',
+        'local' => 'http://linker.site/',
       ),
       'cp' => array(
         'dev' => 'https://dev.contextly.com/',
         'live' => 'https://contextly.com/',
+        'local' => 'http://linker.site/',
       ),
       'api' => array(
         'dev' => 'http://devrest.contextly.com/',
         'live' => 'http://rest.contextly.com/',
+        'local' => 'http://contextly-api.local/',
       ),
     );
   }
