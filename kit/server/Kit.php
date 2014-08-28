@@ -147,7 +147,7 @@ class ContextlyKit {
 
   function isDevMode() {
     // TODO Optimize all 3 functions to avoid comparing strings each time over and over again.
-    return $this->settings->mode === 'dev' || $this->settings->mode === 'local';
+    return $this->settings->mode === 'dev';
   }
 
   function isLiveMode() {
@@ -178,19 +178,17 @@ class ContextlyKit {
         'https' => 'https://c713421.ssl.cf2.rackcdn.com/',
       ),
       'main' => array(
-        'dev' => 'http://dev.contextly.com/',
+        //'dev' => 'http://dev.contextly.com/',
+        'dev' => 'http://linker.site/',
         'live' => 'http://contextly.com/',
-        'local' => 'http://linker.site/',
       ),
       'cp' => array(
         'dev' => 'https://dev.contextly.com/',
         'live' => 'https://contextly.com/',
-        'local' => 'http://linker.site/',
       ),
       'api' => array(
         'dev' => 'http://devrest.contextly.com/',
         'live' => 'http://rest.contextly.com/',
-        'local' => 'http://contextly-api.local/',
       ),
     );
   }
@@ -230,7 +228,7 @@ class ContextlyKit {
   static public function getRootPath() {
     if (!isset(self::$rootPath)) {
       // Get parent directory of the current file.
-	  self::$rootPath = dirname(dirname(__FILE__));
+      self::$rootPath = dirname(dirname(__FILE__));
     }
 
     return self::$rootPath;
