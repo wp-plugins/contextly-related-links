@@ -1,9 +1,5 @@
 (function($) {
 
-  // Init global Contextly namespace if not already done.
-  Contextly = window.Contextly || {};
-  Contextly.overlayDialog = Contextly.overlayDialog || {};
-
   /**
    * Single link editor.
    *

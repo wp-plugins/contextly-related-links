@@ -1,22 +1,24 @@
 (function ($) {
 
   // Init global Contextly namespace if not already done.
-  Contextly = window.Contextly || {};
   Contextly.overlayDialog = Contextly.overlayDialog || {};
 
   /**
    * Base overlay editor class.
    *
    * @class
+   * @extends Contextly.UiRenderer
    */
   Contextly.overlayDialog.Base = Contextly.createClass(/** @lends Contextly.overlayDialog.Base.prototype */ {
 
+    extend: Contextly.UiRenderer,
+
     construct: function() {
+      Contextly.UiRenderer.call(this);
+
       this.connectToParent();
       this.initState();
 
-      this.e = {};
-      this.registerPartials();
       this.renderEditor();
     },
 
@@ -59,18 +61,6 @@
       };
     },
 
-    registerPartials: function() {
-      var map = this.getPartials();
-      for (var partialName in map) {
-        if (!map[partialName]) {
-          continue;
-        }
-
-        var template = this.getTemplate(partialName);
-        Handlebars.registerPartial(partialName, template);
-      }
-    },
-
     initState: function() {
       this.state = {
         inProgress: false,
@@ -89,56 +79,13 @@
         }
       };
 
-      // Get template handlers once and keep it.
-      this.templateHandlers = this.getTemplateHandlers();
-
       // Parse hostname on each tab.
       this.indexAnnotations();
-    },
-
-    getTemplate: function(name) {
-      if (!Contextly.templates[name]) {
-        $.error("Missing template " + name);
-      }
-
-      return Contextly.templates[name];
     },
 
     alterTemplateVariables: function(name, vars) {
       vars.editor = {};
       vars.settings = this.settings;
-    },
-
-    /**
-     * Renders template and adds result to the container.
-     *
-     * @param name
-     * @param [vars]
-     * @param [container]
-     * @param [method]
-     */
-    renderTemplate: function(name, vars, container, method) {
-      vars = vars || {};
-      this.alterTemplateVariables(name, vars);
-
-      var template = this.getTemplate(name);
-      var elements = template(vars);
-
-      // Parse HTML into DOM and then convert to jQuery object to prevent
-      // problems with edge cases like empty or text-only results.
-      elements = $($.parseHTML(elements));
-
-      if (typeof container === 'string') {
-        container = this.e[container];
-      }
-
-      if (container) {
-        method = method || 'append';
-        container[method](elements);
-        this.attachTemplateHandlers(name, container, elements);
-      }
-
-      return elements;
     },
 
     getTemplateHandlers: function() {
@@ -155,16 +102,6 @@
           this.bindSearchResultsLinksEvents
         ]
       };
-    },
-
-    attachTemplateHandlers: function(name, container, elements) {
-      if (!this.templateHandlers[name]) {
-        return;
-      }
-
-      this.each(this.templateHandlers[name], function(handler) {
-        handler.call(this, container, elements);
-      });
     },
 
     showProgressIndicator: function() {
@@ -408,72 +345,6 @@
           .filter('[data-search-type="links"]')
           .first();
       }
-    },
-
-    /**
-     * Returns proxy function that will be called in current context.
-     *
-     * @param func
-     * @param [passContext]
-     *   If true the context of the proxy will be passed as a first argument to
-     *   the callback function.
-     * @param [passArguments]
-     *   If true the arguments of the proxy will be passed to the callback
-     *   (after) the proxy context if set.
-     */
-    proxy: function(func, passContext, passArguments) {
-      // Event handlers needs GUID and it is used to remove the same function
-      // later. Init GUID of the callback first.
-      if (!func.guid) {
-        func.guid = $.guid++;
-      }
-
-      // To minimize overhead of the proxy we generate 4 different functions to
-      // avoid runtime checks.
-      var self = this;
-      var proxy;
-      if (passArguments) {
-        if (passContext) {
-          proxy = function() {
-            Array.prototype.unshift.call(arguments, this);
-            return func.apply(self, arguments);
-          };
-        }
-        else {
-          proxy = function() {
-            return func.apply(self, arguments);
-          };
-        }
-      }
-      else {
-        if (passContext) {
-          proxy = function() {
-            return func.call(self, this);
-          };
-        }
-        else {
-          proxy = function() {
-            return func.call(self);
-          };
-        }
-      }
-
-      // Copy GUID of the callback to the proxy, so it could be detached from
-      // the event.
-      proxy.guid = func.guid;
-
-      return proxy;
-    },
-
-    each: function(collection, func) {
-      return $.each(collection, this.proxy(func, true, true));
-    },
-
-    eachElement: function(elements, func) {
-      return this.each(elements, function() {
-        arguments[0] = $(arguments[0]);
-        return func.apply(this, arguments);
-      });
     },
 
     createTabSearchInfo: function(tab) {

@@ -9,7 +9,7 @@
 	height: 12px !important;
 	float: right;
 	line-height: 1.4 !important;
-	background: url(images/brandedlogo.png) no-repeat right -12px !important;
+	background: url(../img/brandedlogo.png) no-repeat right -12px !important;
 	text-decoration: none;
 	font-size: 9px;
 	font-family: Arial, Helvetica, sans-serif;
@@ -24,7 +24,7 @@
     float: right !important;
 }
 #ctx-branding-link:hover {
-	background: url(images/brandedlogo.png) no-repeat right 0px !important;
+	background: url(../img/brandedlogo.png) no-repeat right 0px !important;
 	color: #1babab !important;
 }
 /* styles for Popup content */
@@ -116,7 +116,7 @@
 		float: right;
 		height: 229px;
 		width: 228px;
-		background: url(images/brandpopupimgs.png) no-repeat -38px -59px;
+		background: url(../img/brandpopupimgs.png) no-repeat -38px -59px;
 		margin-top: 34px;
 		margin-right: 13px
 	}
@@ -125,7 +125,7 @@
 		width: 267px;
 		height: 58px;
 		float: left;
-		background: url(images/brandpopupimgs.png) no-repeat;
+		background: url(../img/brandpopupimgs.png) no-repeat;
 		margin-top: 17px
 	}
 	#ctx-brd-close {
@@ -133,7 +133,7 @@
 		float: right;
 		height: 31px;
 		width: 31px;
-		background: url(images/brandpopupimgs.png) no-repeat 0px -59px;
+		background: url(../img/brandpopupimgs.png) no-repeat 0px -59px;
 		cursor: pointer;
 		top: -3px;
 		position: absolute;
@@ -173,7 +173,7 @@
 		float: left;
 		height: 161px;
 		width: 165px;
-		background: url(images/brandpopupimgs-mobile.png) no-repeat -27px -42px;
+		background: url(../img/brandpopupimgs-mobile.png) no-repeat -27px -42px;
 		margin-top: 34px;
 		margin-left: 43px
 	}
@@ -182,7 +182,7 @@
 		width: 192px;
 		height: 42px;
 		float: left;
-		background: url(images/brandpopupimgs-mobile.png) no-repeat;
+		background: url(../img/brandpopupimgs-mobile.png) no-repeat;
 		margin-top: 6px
 	}
 	#ctx-brd-close {
@@ -190,7 +190,7 @@
 		float: right;
 		height: 23px;
 		width: 23px;
-		background: url(images/brandpopupimgs-mobile.png) no-repeat 0px -42px;
+		background: url(../img/brandpopupimgs-mobile.png) no-repeat 0px -42px;
 		cursor: pointer;
 		top: -3px;
 		position: absolute;

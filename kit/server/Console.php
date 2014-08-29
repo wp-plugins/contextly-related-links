@@ -9,14 +9,14 @@ use \Symfony\Component\Console\Output\OutputInterface;
 class ContextlyKitConsolePackagerCommand extends Command {
 
   /**
-   * @var ContextlyKitPackageManager
+   * @var ContextlyKit
    */
-  protected $manager;
+  protected $kit;
 
-  public function __construct($manager) {
+  public function __construct($kit) {
     parent::__construct();
 
-    $this->manager = $manager;
+    $this->kit = $kit;
   }
 
   protected function configure() {
@@ -45,43 +45,29 @@ class ContextlyKitConsolePackagerCommand extends Command {
 
   protected function execute(InputInterface $input, OutputInterface $output) {
     $map = array(
-      "aggregate-assets" => array(
-        'aggregateAssets',
-        array('version'),
-      ),
-      "upload-assets" => array(
-        'uploadAssets',
-        array('version', 'override'),
-      ),
-      "build-archives" => array(
-        'buildArchives',
-        array('version', 'override'),
-      ),
-      "upload-archives" => array(
-        'uploadArchives',
-        array('version', 'override'),
-      ),
+      "aggregate-assets" => 'aggregateAssets',
+      "upload-assets" => 'uploadAssets',
+      "build-archives" => 'buildArchives',
+      "upload-archives" => 'uploadArchives',
     );
 
     $operations = $input->getArgument('operations');
     if (empty($operations)) {
       $operations = array_keys($map);
     }
+    else {
+      $operations = array_intersect(array_keys($map), $operations);
+    }
 
-    $args_values = array(
+    $options = array(
       'override' => (bool) $input->getOption('override'),
       'version' => $input->getOption('build'),
     );
 
-    foreach (array_intersect(array_keys($map), $operations) as $operation) {
-      list($func, $args_order) = $map[$operation];
-
-      $args = array();
-      foreach ($args_order as $key) {
-        $args[] = $args_values[$key];
-      }
-
-      call_user_func_array(array($this->manager, $func), $args);
+    $manager = $this->kit->newPackageManager($options);
+    foreach ($operations as $operation) {
+      $method = $map[$operation];
+      $manager->{$method}();
     }
   }
 
