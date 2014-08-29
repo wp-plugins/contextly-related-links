@@ -8,7 +8,6 @@ Contextly.MainServerAjaxClient = Contextly.createClass({
     getXhr: function() {
       if (!this.xhr) {
         var remote_url = Contextly.Settings.getMainServerUrl() + '/easy_xdm/cors/index.html';
-        remote_url = remote_url.replace('https://', 'http://');
 
         this.xhr = new easyXDM.Rpc(
           {
@@ -26,9 +25,9 @@ Contextly.MainServerAjaxClient = Contextly.createClass({
     },
 
     call: function(url, callback) {
-      this.getXhr().request(
+        this.getXhr().request(
         {
-          url: url,
+          url: url.replace('http://', 'https://'),
           method: "POST"
         },
         function(response) {

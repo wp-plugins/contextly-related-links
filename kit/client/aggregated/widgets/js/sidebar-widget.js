@@ -109,6 +109,7 @@
             }
 
             self.loadCss('sidebar-css');
+            self.setResponsiveFunction();
           }
         });
     },
@@ -120,8 +121,42 @@
     getCustomCssCode: function() {
       return Contextly.widget.SidebarCssCustomBuilder
         .buildCSS('.ctx-sidebar', this.getSettings());
-    }
+    },
 
-  });
+    setResponsiveFunction: function ()
+    {
+        var self = this;
+
+        $(window).resize(function() {
+            self.runResponsive();
+        });
+
+        window.setTimeout(function() {
+            self.runResponsive();
+        }, 100);
+    },
+
+    runResponsive: function ()
+    {
+        var minWidth = 200;
+        var minWidthRatio = 2.7;
+        var width = this.getDisplayElementWidth();
+
+        if ( width < minWidth || minWidth * minWidthRatio >= this.getScreenWidth() )
+        {
+            this.getDisplayElement()
+                .addClass( "ctx-sb-clearfix" )
+                .addClass( "ctx-sidebar-mobile" )
+                .removeClass( "ctx-sidebar-default" );
+        }
+        else
+        {
+            this.getDisplayElement()
+                .addClass( "ctx-sb-clearfix" )
+                .addClass( "ctx-sidebar-default" )
+                .removeClass( "ctx-sidebar-mobile" );
+        }
+    }
+  })
 
 })(jQuery);

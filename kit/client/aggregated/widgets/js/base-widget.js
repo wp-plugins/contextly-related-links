@@ -52,6 +52,14 @@
       return $('#' + this.widget_html_id);
     },
 
+    getDisplayElementWidth: function() {
+      return this.getDisplayElement().width();
+    },
+
+    getScreenWidth: function () {
+        return $(window).width();
+    },
+
     hasWidgetData: function () {
       return this.widget && this.widget.links;
     },
@@ -175,7 +183,7 @@
       }
 
       function twitterIframe(videoId, videoTitle) {
-        var script = "<iframe allowtransparency='true' frameborder='0' scrolling='no' src='http://platform.twitter.com/widgets/tweet_button.html?text=" + videoTitle + "&url=https%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3D" + videoId + "' style='width:98px; height:20px;'></iframe>";
+        var script = "<iframe allowtransparency='true' frameborder='0' scrolling='no' src='//platform.twitter.com/widgets/tweet_button.html?text=" + videoTitle + "&url=https%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3D" + videoId + "' style='width:98px; height:20px;'></iframe>";
         return script;
       }
 
@@ -185,7 +193,7 @@
 
       function formattedYoutubeLink(videoUrl) {
         var videoId = linkFormatter('v', videoUrl);
-        var fullLink = 'http://www.youtube.com/embed/' + videoId + "?rel=1&autoplay=1";
+        var fullLink = '//www.youtube.com/embed/' + videoId + "?rel=1&autoplay=1";
         return fullLink;
       }
 
@@ -432,9 +440,6 @@
         // Text
         var mobileModuleTx = 450;
 
-        // Sidebar
-        var mobileModuleSb = 200;
-
         function getBlocks2Width() {
           var width = $(".ctx-content-block2").width();
           return width;
@@ -447,11 +452,6 @@
 
         function getTextWidth() {
           var width = $(".ctx-content-text").width();
-          return width;
-        }
-
-        function getSidebarWidth() {
-          var width = $(".ctx-sidebar").width();
           return width;
         }
 
@@ -484,13 +484,6 @@
 
         function respClassChanger(respClass, baseClass) {
           $("." + baseClass).attr("class", baseClass + " ctx-nodefs " + respClass);
-        }
-
-        function respSbClassChanger(respClass, baseClass, removeClass) {
-          $("." + baseClass)
-            .addClass("ctx-sb-clearfix")
-            .addClass(respClass)
-            .removeClass(removeClass);
         }
 
         // Blocks
@@ -566,14 +559,6 @@
         }
         else if (getTextWidth() >= mobileModuleTx) {
           respClassChanger("ctx-module-default", "ctx-content-text");
-        }
-
-        // Sidebar
-        if (getSidebarWidth() < mobileModuleSb) {
-          respSbClassChanger("ctx-sidebar-mobile", "ctx-sidebar", "ctx-sidebar-default");
-        }
-        else if (getSidebarWidth() >= mobileModuleSb) {
-          respSbClassChanger("ctx-sidebar-default", "ctx-sidebar", "ctx-sidebar-mobile");
         }
       }
 

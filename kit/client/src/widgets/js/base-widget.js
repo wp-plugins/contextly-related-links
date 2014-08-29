@@ -183,7 +183,7 @@
       }
 
       function twitterIframe(videoId, videoTitle) {
-        var script = "<iframe allowtransparency='true' frameborder='0' scrolling='no' src='http://platform.twitter.com/widgets/tweet_button.html?text=" + videoTitle + "&url=https%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3D" + videoId + "' style='width:98px; height:20px;'></iframe>";
+        var script = "<iframe allowtransparency='true' frameborder='0' scrolling='no' src='//platform.twitter.com/widgets/tweet_button.html?text=" + videoTitle + "&url=https%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3D" + videoId + "' style='width:98px; height:20px;'></iframe>";
         return script;
       }
 
@@ -193,7 +193,7 @@
 
       function formattedYoutubeLink(videoUrl) {
         var videoId = linkFormatter('v', videoUrl);
-        var fullLink = 'http://www.youtube.com/embed/' + videoId + "?rel=1&autoplay=1";
+        var fullLink = '//www.youtube.com/embed/' + videoId + "?rel=1&autoplay=1";
         return fullLink;
       }
 
