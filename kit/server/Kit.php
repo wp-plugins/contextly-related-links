@@ -178,8 +178,7 @@ class ContextlyKit {
         'https' => 'https://c713421.ssl.cf2.rackcdn.com/',
       ),
       'main' => array(
-        //'dev' => 'http://dev.contextly.com/',
-        'dev' => 'http://linker.site/',
+        'dev' => 'http://dev.contextly.com/',
         'live' => 'http://contextly.com/',
       ),
       'cp' => array(
