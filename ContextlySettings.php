@@ -67,7 +67,7 @@ class ContextlySettings {
 	    add_settings_field( 'publish_confirmation', 'Prompt to Choose Related Posts before publishing:', array( $this, 'settingsDisplayPublishConfirmation' ), self::ADVANCED_SETTINGS_KEY, 'display_section' );
 
 	    $this->tabs[ self::GENERAL_SETTINGS_KEY ] = __( 'General' );
-	    $this->tabs[ self::API_SETTINGS_KEY ] = __( 'API' );
+	    $this->tabs[ self::API_SETTINGS_KEY ] = __( 'API Key' );
         $this->tabs[ self::ADVANCED_SETTINGS_KEY ] = __( 'Advanced' );
     }
 
@@ -121,42 +121,56 @@ class ContextlySettings {
 			$class = 'updated';
 		}
 
-		echo '<div ' . ( $error ? 'id="contextly_warning" ' : '') . 'class="' . esc_attr( $class ) . ' fade' . '"><p>'. esc_html( $message ) . '</p></div>';
+		echo '<div ' . ( $error ? 'id="contextly_warning" ' : '') . 'class="' . esc_attr( $class ) . ' fade' . '"><p>'. $message . '</p></div>';
 	}
 
 	private function getWPPluginSettingsUrl( $tab = 'contextly_options_api' ) {
 		return admin_url( 'admin.php?page=contextly_options&tab=' . $tab );
 	}
 
-	private function getContextlyBaseUrl( $page_type = 'settings' ) {
-		return Urls::getMainServerUrl() . 'redirect/?type=' . $page_type;
-	}
+	private function getContextlyBaseUrl( $page_type ) {
+		$url_params = array(
+			'type'              => $page_type,
+			'blog_url'          => site_url(),
+			'blog_title'        => get_bloginfo("name"),
+			'cms_settings_page' => $this->getWPPluginSettingsUrl(),
+		);
 
-	private function getContextlyRegistrationUrl( $page_type = 'settings' ) {
-		return $this->getContextlyBaseUrl( $page_type ) .
-			"&blog_url=" . urlencode( site_url() ) .
-			"&blog_title=" . urlencode( get_bloginfo("name") ) .
-			"&cms_settings_page=" . urlencode( $this->getWPPluginSettingsUrl() );
+		return Urls::getMainServerUrl() . 'cms-redirect/?' . http_build_query($url_params, NULL, '&');
 	}
 
     public function displaySettings() {
         $tab = isset( $_GET['tab'] ) ? $_GET['tab'] : self::GENERAL_SETTINGS_KEY;
         ?>
         <script>
-            function open_contextly_settings() {
-                var base_url = <?php echo json_encode( $this->getContextlyBaseUrl() ) ?>;
-				var button_id = '#contextly-settings-btn';
+	        function open_contextly_page( open_page_url, button_id )
+            {
 	            var auth_token_attr = 'contextly_access_token';
-	            var token_attr = jQuery( button_id ).attr( auth_token_attr );
+	            var token_attr = jQuery( '#' + button_id ).attr( auth_token_attr );
 
 	            if ( typeof token_attr !== 'undefined' && token_attr !== false ) {
-		            base_url += "&" + auth_token_attr + "=" + encodeURIComponent( token_attr );
-	            } else {
-		            base_url = <?php echo json_encode( $this->getContextlyRegistrationUrl() ) ?>;
+		            open_page_url += "&" + auth_token_attr + "=" + encodeURIComponent( token_attr );
 	            }
 
-                window.open( base_url );
+                window.open( open_page_url );
+
+	            return false;
             }
+            function open_contextly_settings()
+            {
+	            var open_url = <?php echo json_encode( $this->getContextlyBaseUrl('settings') ) ?>;
+	            var button_id = 'contextly-settings-btn';
+
+	            return open_contextly_page( open_url, button_id );
+            }
+
+	        function open_contextly_api_page()
+	        {
+		        var open_url = <?php echo json_encode( $this->getContextlyBaseUrl('') ) ?>;
+		        var button_id = 'contextly-api-btn';
+
+		        return open_contextly_page( open_url, button_id );
+	        }
         </script>
         <div class="wrap">
             <?php $this->displaySettingsTabs(); ?>
@@ -168,68 +182,91 @@ class ContextlySettings {
 				    <p>
 					    <input type="button" value="The Big Settings Button" class="button button-hero button-primary" style="font-size: 18px;" id="contextly-settings-btn" onclick="open_contextly_settings();" />
 				    </p><br />
-				    <?php
-		            $options = get_option( self::API_SETTINGS_KEY );
 
-		            if ( is_admin() && isset( $options["api_key"] ) && $options["api_key"] ) {
-					    $this->displaySettingsAutoloadStuff();
-				    }
-				    ?>
-			    <?php } ?>
+			    <?php
+		                $this->displaySettingsAutoloadStuff( 'contextly-settings-btn', true );
+	                }
+	            ?>
 
 		        <form action="options.php" method="post">
                     <?php settings_fields( $tab ); ?>
                     <?php do_settings_sections( $tab ); ?>
                     <?php if ( $tab == self::API_SETTINGS_KEY ) { ?>
-                        <?php submit_button(
-		                    'Save API Key',
-		                    'primary large button-hero',
-		                    'submit',
-		                    null,
-		                    array(
-			                    'style' => 'font-size: 18px; margin-top: 20px;'
-		                    )
-	                    ); ?>
-	                <?php } elseif ( $tab == self::ADVANCED_SETTINGS_KEY ) { ?>
+	                    <style>
+		                    span.btn-step-number {
+			                    font-size: 22px;
+			                    margin-right: 10px;
+		                    }
+		                    span.btn-area {
+			                    line-height: 2em;
+		                    }
+	                    </style>
+	                    <div style="margin-top: 20px;">
+		                    <span class="btn-step-number">1.</span>
+		                    <span class="btn-area">
+			                    <?php submit_button(
+				                    'Customize Contextly and Get API Key',
+				                    'primary large button-hero',
+				                    'button',
+				                    null,
+				                    array(
+					                    'style'     => 'font-size: 18px; background-color: #35b137; background-image: linear-gradient(to bottom, #36a739, #249b27); border-color: #36a739;',
+					                    'onclick'   => 'return open_contextly_api_page();',
+					                    'id'        => 'contextly-api-btn'
+				                    )
+			                    ); ?>
+		                    <span>
+		                </div>
+	                    <div style="margin-top: 20px;">
+							<span class="btn-step-number">2.</span>
+							<span class="btn-area">
+			                    <?php submit_button(
+				                    'Save API Key',
+				                    'primary large button-hero',
+				                    'submit',
+				                    null,
+				                    array(
+					                    'style' => 'font-size: 18px;'
+				                    )
+			                    ); ?>
+							</span>
+	                    </div>
+	                <?php
+	                    $this->displaySettingsAutoloadStuff( 'contextly-api-btn' );
+                    }
+                    elseif ( $tab == self::ADVANCED_SETTINGS_KEY ) { ?>
 	                    <?php submit_button( null, 'primary' ); ?>
                     <?php } ?>
                 </form>
-
-	        <?php if ( $tab == self::API_SETTINGS_KEY ) { ?>
-		        <?php submit_button(
-			        'Get API Key',
-			        'primary large button-hero',
-			        'button',
-			        null,
-			        array(
-				        'style' => 'font-size: 18px; margin-top: 20px; background-color: #35b137; background-image: linear-gradient(to bottom, #36a739, #249b27); border-color: #36a739;',
-				        'onclick' => 'window.location.href="' . $this->getContextlyRegistrationUrl('tour') . '"'
-			        )
-		        ); ?>
-	        <?php } ?>
 
         </div>
         <?php
     }
 
-	private function displaySettingsAutoloadStuff() {
-		$contextly_object = new Contextly();
-		$contextly_object->loadContextlyAjaxJSScripts();
-		$contextly_object->makeContextlyJSObject(
-			array(
-				'disable_autoload' => true
-			)
-		);
+	private function displaySettingsAutoloadStuff( $button_id, $disabled_flag = false )
+	{
+		$options = get_option( self::API_SETTINGS_KEY );
 
-		?>
-		<script>
-			jQuery( document ).ready(
-				function () {
-					Contextly.SettingsAutoLogin.getInstance().doLogin();
-				}
+		if ( is_admin() && isset( $options["api_key"] ) && $options["api_key"] )
+		{
+			$contextly_object = new Contextly();
+			$contextly_object->loadContextlyAjaxJSScripts();
+			$contextly_object->makeContextlyJSObject(
+				array(
+					'disable_autoload' => true
+				)
 			);
-		</script>
+
+			?>
+			<script>
+				jQuery( document ).ready(
+					function () {
+						Contextly.SettingsAutoLogin.doLogin( <?php echo json_encode( $button_id ) ?>, <?php echo json_encode( $disabled_flag ) ?> );
+					}
+				);
+			</script>
 		<?php
+		}
 	}
 
     public function displaySettingsTabs() {
@@ -245,7 +282,7 @@ class ContextlySettings {
     }
 
     public function apiLayoutSection() {
-        echo "<p>In order to communicate securely, we use a shared secret key. You can find your secret API key on <a target='_blank' href='".esc_url( $this->getContextlyRegistrationUrl('tour') )."'>this page</a>. Copy and paste it below.</p>";
+        echo "<p>In order to communicate securely, we use a shared secret key. You can find your secret API key with button \"Customize Contextly and Get API Key\". Copy and paste it below.</p>";
     }
 
     public function apiKeyInput() {

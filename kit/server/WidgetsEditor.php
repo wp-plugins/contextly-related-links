@@ -111,9 +111,9 @@ class ContextlyKitWidgetsEditor extends ContextlyKitBase {
 
     $response = $this->api
       ->method('search', 'list')
+      ->extraParam('query', $query)
       ->param('page', $page)
       ->param('per_page', $perPage)
-      ->extraParam('query', $query)
       ->extraParams($extraParams)
       ->requireSuccess()
       ->get();

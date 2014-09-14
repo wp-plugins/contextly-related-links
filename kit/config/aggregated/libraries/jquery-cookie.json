@@ -1,1 +1,1 @@
-{"js":["libraries--jquery-cookie"]}
+{"include":["libraries\/jquery"],"js":["libraries--jquery-cookie"]}

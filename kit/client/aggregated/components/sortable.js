@@ -1,8 +1,5 @@
 (function ($) {
 
-  // Init global Contextly namespace if not already done.
-  Contextly = window.Contextly || {};
-
   /**
    * Sortable list component.
    *

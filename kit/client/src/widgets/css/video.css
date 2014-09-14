@@ -39,7 +39,7 @@
 }
 .ctx-video-modal {
     display: none;
-    top: 20% !important;
+    top: 5% !important;
     left: 50% !important;
     background: #f6f6f6;
     position: fixed !important;
@@ -88,7 +88,7 @@
     top: 45%;
     width: 24px;
     margin: -24px 0 0 -24px !important;
-    background: url(images/loading.gif) center center no-repeat;
+    background: url(../img/loading.gif) center center no-repeat;
 }
 .ctx-video-title {
     color: #000000;
@@ -108,11 +108,11 @@
 @media all and (min-width: 540px) {
     .ctx-video-modal {
         margin-left: -260px !important;
-        width: 500px !important;
+        width: 450px !important;
     }
     .ctx-video-modal .ctx-video-frame {
-        width: 500px !important;
-        height: 344px !important;
+        width: 450px !important;
+        height: 280px !important;
     }
     .ctx-video-title {
         width: 90%;
