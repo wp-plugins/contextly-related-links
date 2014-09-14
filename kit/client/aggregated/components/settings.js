@@ -82,44 +82,66 @@ Contextly.BaseSettings = Contextly.createClass({
       return this.getCdnCssUrl() + "wp_plugin/" + this.getPluginVersion() + "/css-api/sidebar/template-" + settings.theme + ".css";
     },
 
+    getPostDataForKey: function(key)
+    {
+        var data = this.getPostData();
+        if ( data !== null && data[key])
+        {
+            return data[key];
+        }
+
+        return null;
+    },
+
+    getPostDataForKeyCount: function(key)
+    {
+        var data = this.getPostDataForKey(key);
+
+        if ( data !== null )
+        {
+            return data.length;
+        }
+        return 0;
+    },
+
     getPageId: function() {
-      var data = this.getPostData();
-      return data.post_id;
+      return this.getPostDataForKey('post_id');
     },
 
     getPostModifiedDate: function() {
-      var data = this.getPostData();
-      return data.mod_date;
+      return this.getPostDataForKey('mod_date');
     },
 
     getPostCreatedDate: function() {
-      var data = this.getPostData();
-      return data.pub_date;
+      return this.getPostDataForKey('pub_date');
     },
 
     getAuthorId: function() {
-      var data = this.getPostData();
-      return data.author_id;
+      return this.getPostDataForKey('author_id');
     },
 
     getPageUrl: function() {
-      var data = this.getPostData();
-      return data.url;
+      return this.getPostDataForKey('url');
     },
 
     getPostType: function() {
-      var data = this.getPostData();
-      return data.type;
+      return this.getPostDataForKey('type');
     },
 
     getPostCategories: function() {
-      var data = this.getPostData();
-      return data.categories;
+      return this.getPostDataForKey('categories');
     },
 
     getPostTags: function() {
-      var data = this.getPostData();
-      return data.tags;
+      return this.getPostDataForKey('tags');
+    },
+
+    getPostCategoriesCount: function() {
+      return this.getPostDataForKeyCount('categories');
+    },
+
+    getPostTagsCount: function() {
+      return this.getPostDataForKeyCount('tags');
     },
 
     // TODO Switch to Kit CDN.

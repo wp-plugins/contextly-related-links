@@ -295,6 +295,8 @@ class ContextlySettings {
 
 		    if ( !isset( $options["api_key"] ) || $options["api_key"] != $get_api_key )
 		    {
+			    Contextly::fireAPIEvent( 'contextlyApiInserted', $get_api_key );
+
 			    $options["api_key"] = sanitize_text_field( $get_api_key );
 			    $input_style = " style='background-color: #FFEBE8; border-color: #CC0000;'";
 		    }
@@ -307,7 +309,7 @@ class ContextlySettings {
 		$options = get_option( self::API_SETTINGS_KEY );
 
 		if ( !$options || !isset( $options["api_key"] ) || !$options["api_key"] || !$this->validateApiKeyRegexp( $options['api_key'] ) ) {
-			$this->showAdminMessage( sprintf( 'You must %sconfigure the plugin%s to enable Contextly for WordPress.', '<a href="' . esc_url( $this->getWPPluginSettingsUrl() ) . '">', '</a>' ), true );
+			$this->showAdminMessage( sprintf( 'You need to get your %ssecret key%s before Contextly shows recommendations.', '<a href="' . esc_url( $this->getWPPluginSettingsUrl() ) . '">', '</a>' ), true );
 		}
 	}
 
@@ -427,13 +429,7 @@ class ContextlySettings {
 	}
 
 	public function getKitCdnValue() {
-/*		$options = get_option( self::ADVANCED_SETTINGS_KEY );
-
-		if ( isset( $options[ 'kit_cdn' ] ) ) {
-			return (bool) $options[ 'kit_cdn' ];
-		}*/
-
-		return false;
+		return true;
 	}
 
     public function isPageDisplayDisabled( $page_id ) {

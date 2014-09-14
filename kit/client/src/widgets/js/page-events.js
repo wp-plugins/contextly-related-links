@@ -5,41 +5,50 @@ Contextly.PageEvents = Contextly.createClass({
 
   statics: /** @lends Contextly.PageEvents */{
 
-    trackLink: function(widget_type, link_type, link_title) {
-      if (!widget_type || !link_type || !link_title) {
+    trackLink: function(widget_type, link_type, link_url, link_title) {
+      if (!widget_type || !link_type || !link_url || !link_title) {
         return;
       }
 
-      var label_limit = 30;
-      var action = 'ClickedOutBound';
-      var label = link_title;
+      var category = 'Contextly';
+      var action = '';
 
-      var category;
       if (widget_type === Contextly.widget.types.SIDEBAR) {
-        category = 'ContextlySidebar';
+          action = 'Sidebar_';
       }
       else {
-        category = 'ContextlyModule';
+          action = 'Module_';
       }
+
+      if ( link_type == Contextly.widget.linkTypes.WEB ) {
+        action += 'External_';
+      } else if ( link_type == Contextly.widget.linkTypes.PREVIOUS || link_type == Contextly.widget.linkTypes.RECENT ) {
+        action += 'Related_';
+      } else if ( link_type == Contextly.widget.linkTypes.PROMO ) {
+        action += 'Promo_';
+      } else {
+        action += link_type.charAt(0).toUpperCase() + link_type.slice(1) + '_';
+      }
+
+      var page_type = 'Post';
+      var url_parts = link_url.split('?');
+      var url_params = url_parts[1].split(':');
+      if (url_params.length >= 3 ) {
+        var algorithm_id = url_params[3];
+        if (algorithm_id == Contextly.widget.recommendationTypes.PRODUCT) {
+          page_type = 'Product';
+        }
+        else if (algorithm_id == Contextly.widget.recommendationTypes.VIDEO) {
+          page_type = 'Video';
+        }
+      }
+      action += page_type;
+
+      var label_limit = 30;
+      var label = link_title;
 
       if (label.length > label_limit) {
         label = label.substr(0, label_limit);
-      }
-
-      if (widget_type == Contextly.widget.types.SIDEBAR && ( link_type == Contextly.widget.linkTypes.WEB || link_type == Contextly.widget.linkTypes.PREVIOUS )) {
-        action = 'ClickedRecentRelated';
-      }
-      else if (link_type == Contextly.widget.linkTypes.PREVIOUS) {
-        action = 'ClickedPreviousRelated';
-      }
-      else if (link_type == Contextly.widget.linkTypes.RECENT) {
-        action = 'ClickedRecentRelated';
-      }
-      else if (link_type == Contextly.widget.linkTypes.PROMO) {
-        action = 'ClickedPromoLink';
-      }
-      else {
-        action = 'Clicked' + link_type.charAt(0).toUpperCase() + link_type.slice(1);
       }
 
       if (typeof window.pageTracker != 'undefined') {
@@ -49,7 +58,6 @@ Contextly.PageEvents = Contextly.createClass({
         _gaq.push(['_trackEvent', category, action, label]);
       }
     }
-
   }
 
 });

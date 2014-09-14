@@ -106,9 +106,9 @@ class ContextlyKit {
    *   "client/aggregated" folder on live mode.
    */
   function buildAssetUrl($filepath) {
-    if ($this->isCdnEnabled()) {
+	if ($this->isCdnEnabled() && strpos($filepath, '.css') === false) {
       // TODO Avoid hard-coding "_kit/assets" path.
-      return $this->getServerUrl('cdn') . '_kit/assets/' . self::version() . '/' . $filepath;
+      return $this->getServerUrl('cdn') . 'kit/assets/' . self::version() . '/' . $filepath;
     }
     else {
       return $this->buildFileUrl($this->getFolderPath('client') . '/' . $filepath);
@@ -159,7 +159,7 @@ class ContextlyKit {
   }
 
   function isHttps() {
-    if (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') {
+	if (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') {
       return TRUE;
     }
     else {
@@ -174,8 +174,8 @@ class ContextlyKit {
   protected function getServerUrls() {
     return array(
       'cdn' => array(
-        'http' => 'http://contextlysiteimages.contextly.com/',
-        'https' => 'https://c713421.ssl.cf2.rackcdn.com/',
+        'http' => 'http://contextlysitescripts.contextly.com/',
+        'https' => 'https://c714015.ssl.cf2.rackcdn.com/',
       ),
       'main' => array(
         'dev' => 'http://dev.contextly.com/',
@@ -187,8 +187,11 @@ class ContextlyKit {
       ),
       'api' => array(
         'dev' => 'http://devrest.contextly.com/',
-        'live' => 'http://rest.contextly.com/',
-      ),
+        'live' => array(
+	      'http' => 'http://rest.contextly.com/',
+	      'https' => 'https://rest.contextly.com/',
+        )
+      )
     );
   }
 
@@ -205,11 +208,15 @@ class ContextlyKit {
     else {
       $keys = array();
       $keys[] = $this->settings->mode;
-      $keys[] = $this->isHttps() ? 'https' : 'http';
+	  $keys[] = $this->isHttps() ? 'https' : 'http';
 
       foreach ($keys as $key) {
-        if (isset($serverUrls[$key])) {
-          return $serverUrls[$key];
+	    if (isset($serverUrls[$key])) {
+	      if ( is_string($serverUrls[$key]) ) {
+		    return $serverUrls[$key];
+	      } else {
+		    $serverUrls = $serverUrls[$key];
+	      }
         }
       }
 

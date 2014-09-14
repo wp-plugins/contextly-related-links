@@ -2,28 +2,30 @@
 .ctx-video-icon {
     display: block !important;
     position: relative;
-    overflow: hidden;
-    width: 17px;
-    height: 10px;
+    width: 14px;
+    height: 12px;
     float: left;
-    margin: 5px 3px 0 0;
-    padding: 0 !important;
-    -webkit-border-radius: 3px;
-    -moz-border-radius: 3px;
-    border-radius: 3px;
+    margin-top:4px;
+    margin-right: 9px;
+    /* css3 */
+    -webkit-border-radius:2px;
+    -moz-border-radius:2px;
+    border-radius:2px;
 }
 .ctx-video-icon:after {
     content: "";
     position: absolute;
     width: 0;
     height: 0;
-    margin-top: 2px;
-    margin-left: 6px;
-    border-top: 3px solid transparent;
-    border-left: 6px solid;
-    border-bottom: 3px solid transparent;
+    margin-top: 1px;
+    background-color: transparent;
+    border-width: 5px 6px 5px 0;
+    border-bottom-color: transparent;
+    border-top-color: transparent;
+    border-left-color: transparent;
+    border-style: solid;
+    left: 12px;
 }
-
 /* video links modal*/
 .ctx-video-overlay {
     display: none;
@@ -51,6 +53,7 @@
     -moz-box-shadow: 0 0 10px rgba(0,0,0,.4);
     -webkit-box-shadow: 0 0 10px rgba(0,0,0,.4);
     -box-shadow: 0 0 10px rgba(0,0,0,.4);
+    box-sizing: content-box;
 }
 .ctx-video-modal .ctx-video-close {
     display: block !important;

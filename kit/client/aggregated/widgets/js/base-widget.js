@@ -29,6 +29,15 @@
     PROMO: 'sticky'
   };
 
+  // Widget recommendation types.
+  Contextly.widget.recommendationTypes = {
+    VIDEO: 10,
+    PRODUCT: 9,
+    COOKIE: 8,
+    EVERGREEN: 7,
+    OPTIMIZATION: 6
+  };
+
   /**
    * Base class for all widgets.
    *
@@ -350,21 +359,28 @@
       return Contextly.widget.Utils.escape(text);
     },
 
-    getOnclickHtml: function(link) {
+    getEventTrackingHtml: function(link) {
       var settings = this.getSettings();
+      var html = " onmousedown=\"";
 
-      if (settings && settings.utm_enable) {
-        return " onclick=\"" + this.getTrackLinkJSHtml(link) + "\"";
+      if (!link.video) {
+          html += "this.href='" + this.escape(link.url) + "';"
       }
 
-      return "";
+      if (settings && settings.utm_enable) {
+        html += this.getTrackLinkJSHtml(link);
+      }
+
+      html += "\"";
+
+      return html;
     },
 
     getLinkATag: function(link, content) {
       return "<a href=\"" +
         this.escape(link.native_url) + "\" title=\"" +
-        this.escape(link.title) + "\" class='ctx-clearfix ctx-nodefs' onmousedown=\"this.href='" +
-        this.escape(link.url) + "'\" " + this.getOnclickHtml(link) + ">" +
+        this.escape(link.title) + "\" class='ctx-clearfix ctx-nodefs' " +
+        this.getEventTrackingHtml(link) + ">" +
         content + "</a>";
     },
 
@@ -381,16 +397,17 @@
       return "<a rel=\"ctx-video-dataurl\" class='ctx-clearfix ctx-nodefs' href=\"" +
         this.escape(link.native_url) + "\" title=\"" +
         this.escape(link.title) + "\" contextly-url=\"" + link.url + "\" " +
-        this.getOnclickHtml(link) + ">" +
+        this.getEventTrackingHtml(link) + ">" +
         videoIcon + " " + content + "</a>";
     },
 
     getTrackLinkJSHtml: function(link) {
       var widget_type = this.escape(this.getWidgetType());
       var link_type = this.escape(link.type);
+      var link_url = this.escape(link.url);
       var link_title = this.escape(link.title);
 
-      return this.escape("Contextly.PageEvents.trackLink('" + widget_type + "','" + link_type + "','" + link_title + "');");
+      return this.escape("Contextly.PageEvents.trackLink('" + widget_type + "','" + link_type + "','" + link_url + "','" + link_title + "');");
     },
 
     getLinkHTML: function(link) {
