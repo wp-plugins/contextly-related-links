@@ -86,10 +86,11 @@ class ContextlyWpApiTransport implements ContextlyKitApiTransportInterface {
 		}
 
 		$result = wp_remote_request( $url, array(
-			'timeout'   => 10,
+			'timeout'   => 40,
 			'method'    => $method,
 			'body'      => $data,
 			'headers'   => $headers,
+			'sslverify' => false,
 		) );
 
 		// Build the response for the kit.
@@ -256,7 +257,7 @@ class ContextlyWpWidgetsEditor extends ContextlyKitWidgetsEditor {
 			$result = $this->handleRequest( $method, $params );
 		}
 		catch (ContextlyKitException $e) {
-		  if (CONTEXTLY_MODE !== Urls::MODE_LIVE) {
+		    if (CONTEXTLY_MODE !== Urls::MODE_LIVE) {
 				$message = (string) $e;
 			}
 			else {
