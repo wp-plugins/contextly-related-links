@@ -21,30 +21,44 @@ class ContextlyKitAssetsManager extends ContextlyKitBase {
     return $this->configs[$packageName];
   }
 
-  protected function resolveDependencies($parentName) {
-    $configs = array(
-      $parentName => $this->getConfig($parentName),
-    );
+  /**
+   * Returns list of configs keyed by package name.
+   *
+   * Order of packages on the "include" section is kept. Dependencies of each
+   * package are included before the package itself.
+   *
+   * @param string $parentName
+   *   Name of the parent package.
+   * @param array $ignore
+   *   List of ignored packages. Keys are package names, values are not used.
+   * @param array $utilized
+   *   Internal use only. Stores the list of already found packages, to avoid
+   *   parsing of the same package multiple times.
+   *
+   * @return array
+   *   List of configs or NULLs keyed by package name.
+   */
+  protected function resolveDependencies($parentName, $ignore = array(), &$utilized = array()) {
+    $utilized[$parentName] = TRUE;
 
-    for ($i = 0; $i < count($configs); $i++) {
-      $slice = array_slice($configs, $i, 1);
-      $config = reset($slice);
+    $result = array();
+    $config = NULL;
+    if (!array_key_exists($parentName, $ignore)) {
+      $config = $this->getConfig($parentName);
+      if (!empty($config->include)) {
+        foreach ($config->include as $package) {
+          if (isset($utilized[$package])) {
+            continue;
+          }
 
-      if (empty($config->include)) {
-        continue;
-      }
-
-      foreach ($config->include as $package) {
-        if (isset($configs[$package])) {
-          continue;
+          $result += $this->resolveDependencies($package, $ignore, $utilized);
         }
-
-        $configs[$package] = $this->getConfig($package);
       }
     }
 
-    // Reverse array to include dependencies in right order.
-    return array_reverse($configs);
+    $result[$parentName] = $config;
+
+    return $result;
   }
 
   /**
@@ -52,14 +66,28 @@ class ContextlyKitAssetsManager extends ContextlyKitBase {
    *
    * @param string $packageName
    * @param ContextlyKitAssetsList $assets
+	 * @param array $ignore
+	 *   Keys are package names to ignore, values are not used. Should be used
+	 *   to replace Kit libraries with CMS variants.
    *
-   * @return ContextlyKitAssetsList
+   * @return array
+   *   List of parsed packages, including ignored ones. Keys are package names,
+   *   values are TRUE for included packages and FALSE for ignored ones.
    */
-  function extractPackageAssets($packageName, $assets) {
-    $configs = $this->resolveDependencies($packageName);
-    foreach ($configs as $config) {
-      $assets->parseConfig($config);
+  function extractPackageAssets($packageName, $assets, $ignore = array()) {
+    $configs = $this->resolveDependencies($packageName, $ignore);
+
+    $result = array();
+    foreach ($configs as $key => $config) {
+      $included = isset($config);
+
+      if ($included) {
+        $assets->parseConfig($config);
+      }
+
+      $result[$key] = $included;
     }
+    return $result;
   }
 
   function discoverPackages() {
@@ -97,7 +125,7 @@ class ContextlyKitAssetsManager extends ContextlyKitBase {
     foreach ($packages as $packageName) {
       $config = $this->getConfig($packageName);
       if (!empty($config->aggregate)) {
-        $aggregate[] = $packageName;
+        $aggregate[$packageName] = TRUE;
       }
     }
     return $aggregate;
@@ -372,58 +400,6 @@ class ContextlyKitAssetsHtmlRenderer extends ContextlyKitAssetsRenderer {
       $this->renderJS(),
       $this->renderTpl(),
     ));
-  }
-
-}
-
-class ContextlyKitAssetsConfigAggregated extends ContextlyKitBase {
-
-  protected $packageName;
-
-  /**
-   * @var \Symfony\Component\Filesystem\Filesystem
-   */
-  protected $fs;
-
-  protected $config = array();
-
-  /**
-   * @param ContextlyKit $kit
-   * @param ContextlyKitPackageManager $manager
-   * @param $packageName
-   */
-  public function __construct($kit, $manager, $packageName) {
-    parent::__construct($kit);
-
-    $this->fs = $manager->getFs();
-    $this->packageName = $packageName;
-  }
-
-  public function save() {
-    $base_path = $this->kit->getFolderPath('config/aggregated', TRUE);
-    $target_path = $base_path . '/' . $this->packageName . '.json';
-
-    $folder = dirname($target_path);
-    $this->fs->mkdir($folder);
-
-    $json = json_encode($this->config);
-    return file_put_contents($target_path, $json);
-  }
-
-  public function &__get($name) {
-    return $this->config[$name];
-  }
-
-  public function __isset($name) {
-    return isset($this->config[$name]);
-  }
-
-  public function __set($name, $value) {
-    $this->config[$name] = $value;
-  }
-
-  public function __unset($name) {
-    unset($this->config[$name]);
   }
 
 }

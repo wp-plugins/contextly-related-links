@@ -1,10 +1,10 @@
 {
   "include": [
-    "components/create-class",
-    "components/handlebars",
     "libraries/bootstrap",
     "libraries/font-awesome",
-    "libraries/scroll-to"
+    "libraries/scroll-to",
+    "components/handlebars",
+    "components/ui-renderer"
   ],
 
   "base": "overlay-dialogs",

@@ -38,12 +38,13 @@ class Contextly
 	}
 
     public function init() {
-        if ( is_admin() ) {
+	    if ( is_admin() ) {
             add_action( 'admin_enqueue_scripts', array( $this, 'initAdmin' ), 1 );
             add_action( 'save_post', array( $this, 'publishBoxControlSavePostHook' ) );
 	        add_filter( 'default_content', array( $this, 'addAutosidebarCodeFilter' ), 10, 2 );
 			add_action( 'admin_head', array( $this, 'insertMetatags' ) );
 			add_action( 'admin_footer', array( $this, 'addQuicktagsEditorIntegration' ) );
+		    register_activation_hook( CONTEXTLY_PLUGIN_FILE, array( $this, 'addActivationHook' ) );
 
 			// Register overlay dialog page.
 			ContextlyWpKit::getInstance()
@@ -56,7 +57,6 @@ class Contextly
         }
 
         add_action( 'wp_enqueue_scripts', array( $this, 'loadScripts' ) );
-	    add_action( 'wp_enqueue_scripts', array( $this, 'loadStyles' ) );
         add_action( 'admin_enqueue_scripts', array( $this, 'loadScripts' ) );
 
         add_action( 'publish_post', array( $this, 'publishPost'), 10, 2 );
@@ -106,7 +106,7 @@ class Contextly
         return false;
     }
 
-    public function getAPIClientOptions() {
+    public static function getAPIClientOptions() {
         $client_options = array(
             'appID'         => '',
             'appSecret'     => ''
@@ -208,9 +208,23 @@ class Contextly
         }
     }
 
-    private function addPostEditor() {
+	private function addKitAssets( $packages, $ignore = array() ) {
+		$kit = ContextlyWpKit::getInstance();
+		$assets = $kit->newAssetsList();
+		$manager = $kit->newAssetsManager();
+
+		$packages = (array) $packages;
+		foreach ( $packages as $package ) {
+			$manager->extractPackageAssets( $package, $assets, $ignore );
+		}
+
+		$kit->newWpAssetsRenderer( $assets )
+				->renderAll();
+	}
+
+	private function addPostEditor() {
 		wp_enqueue_script( 'contextly-post-editor', $this->getPluginJs( 'contextly-post-editor.js' ), 'contextly', null, true );
-    }
+	}
 
     private function addAdminMetaboxForPage( $page_type ) {
         add_meta_box(
@@ -327,17 +341,6 @@ class Contextly
 	            $additional_html_controls = $this->getAdditionalShowHideControl();
             }
         }
-	    else
-	    {
-		    if ( $this->isLoadWidget() )
-		    {
-			    $api_options = $this->getAPIClientOptions();
-				if ( isset( $api_options[ 'appID' ] ) && $api_options[ 'appID' ] && isset( $post ) && $post->ID )
-				{
-					$additional_html_controls = sprintf( '<a href="%s" style="display: none;">Related</a>',	esc_url( Urls::getApiServerSeoHtmlUrl( $api_options[ 'appID' ], $post->ID ) ) );
-				}
-		    }
-	    }
 
         return "<div id='" . esc_attr( self::WIDGET_SNIPPET_ID ) . "' class='" . esc_attr( self::WIDGET_SNIPPET_CLASS ) . "'>" . $default_html_code . "</div>" . $additional_html_controls;
     }
@@ -361,10 +364,18 @@ class Contextly
 	public function loadContextlyAjaxJSScripts() {
 		wp_enqueue_script( 'jquery' );
 		wp_enqueue_script( 'json2' );
-		wp_enqueue_script( 'easy_xdm', Urls::getMainJsCdnUrl( 'easyXDM.min.js' ), 'jquery', null, true );
-		wp_enqueue_script( 'jquery_cookie', $this->getPluginJs( 'jquery.cookie.js' ), 'jquery', null, true );
-		wp_enqueue_script( 'contextly-create-class', $this->getPluginJs( 'contextly-class.min.js' ), 'easy_xdm', null, true );
-		wp_enqueue_script( 'contextly', $this->getPluginJs( 'contextly-wordpress.js' ), 'contextly-create-class', null, true );
+
+		$include = array(
+			'libraries/jquery-cookie',
+			'widgets/factory',
+		);
+		$ignore = array(
+			'libraries/jquery' => TRUE,
+			'libraries/json2' => TRUE,
+		);
+		$this->addKitAssets( $include, $ignore );
+
+		wp_enqueue_script( 'contextly', $this->getPluginJs( 'contextly-wordpress.js' ), 'jquery', null, true );
 	}
 
 	private function getAjaxUrl() {
@@ -378,7 +389,7 @@ class Contextly
 	public function makeContextlyJSObject( $additional_options = array() ) {
 		global $post;
 
-		$api_options = $this->getAPIClientOptions();
+		$api_options = self::getAPIClientOptions();
 
 		$options = array(
 			'ajax_url'      => $this->getAjaxUrl(),
@@ -402,10 +413,20 @@ class Contextly
 		}
 
 		wp_localize_script(
-			'easy_xdm',
+			$this->getSettingsHandleName(),
 			'Contextly',
 			array( 'l10n_print_after' => 'Contextly = ' . json_encode( $options ) . ';' )
 		);
+	}
+
+	private function getSettingsHandleName()
+	{
+		if ( CONTEXTLY_MODE == Urls::MODE_DEV )
+		{
+			return 'contextly-kit-components-create-class';
+		}
+
+		return 'contextly-kit-widgets--factory';
 	}
 
 	private function isLoadWidget()
@@ -437,23 +458,10 @@ class Contextly
     }
 
 	protected function addOverlayLibrary() {
-		$kit = ContextlyWpKit::getInstance();
-		$assets = $kit->newAssetsList();
-
-		$kit->newAssetsManager()
-			->extractPackageAssets('components/overlay', $assets);
-		$kit->newWpAssetsRenderer($assets)
-			->renderAll();
-	}
-
-	public function loadStyles() {
-		if ( $this->isLoadWidget() )
-		{
-			wp_register_style( 'video-modal', $this->getPluginCss( 'video-modal/reveal.css' ) );
-			wp_enqueue_style( 'video-modal' );
-			wp_register_style( 'contextly-branding', $this->getPluginCss( 'branding/branding.css' ) );
-			wp_enqueue_style( 'contextly-branding' );
-		}
+		$ignore = array(
+			'libraries/jquery' => TRUE,
+		);
+		$this->addKitAssets( 'components/overlay', $ignore );
 	}
 
 	public function ajaxPublishPostCallback() {
@@ -670,7 +678,8 @@ class Contextly
 			$data = array(
 				'success' => 0,
 				'code' => $e->getCode(),
-				'message' => $e->getMessage()
+				'message' => $e->getMessage(),
+				'api-object' => print_r($e, true)
 			);
 		}
 
@@ -810,6 +819,30 @@ class Contextly
 			print $message;
 		}
 		exit;
+	}
+
+	public function addActivationHook()
+	{
+		self::fireAPIEvent( 'contextlyPluginActivated' );
+	}
+
+	public static function fireAPIEvent( $type, $text = '' )
+	{
+		$api = ContextlyWpKit::getInstance()->newApi();
+
+		try {
+			$api->method( 'events', 'put' )
+				->extraParams(
+					array(
+						'event_type' => 'email',
+						'event_name' => $type,
+						'site_path'  => site_url(),
+						'event_message' => $text
+					)
+				)
+				->get();
+		} catch ( Exception $e ) {
+		}
 	}
 
 }

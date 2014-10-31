@@ -1,9 +1,5 @@
 (function($) {
 
-  // Init global Contextly namespace if not already done.
-  Contextly = window.Contextly || {};
-  Contextly.overlayDialog = Contextly.overlayDialog || {};
-
   /**
    * Sidebar editor.
    *
@@ -345,12 +341,18 @@
     onDialogSave: function() {
       var sidebarData = this.buildSidebarData();
 
+      /**
+       Do not display confirmation for sidebars with empty title
+
       if (!sidebarData.name && !sidebarData.description) {
         this.e.sidebarModal.modal();
       }
       else {
         this.saveSidebar(sidebarData);
       }
+      */
+
+      this.saveSidebar(sidebarData);
 
       return false;
     },
