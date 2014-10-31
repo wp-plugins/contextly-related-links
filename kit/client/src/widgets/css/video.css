@@ -59,8 +59,8 @@
     display: block !important;
     float: right !important;
     margin-top: 5px;
-    font-size: 22px;
-    line-height: 1.1;
+    font-size: 21px;
+    line-height: 24px;
     top: 8px;
     right: 11px;
     color: #7E7C7C;
@@ -68,7 +68,10 @@
     font-family: "Helvetica Neue", "Helvetica", Helvetica, Arial, sans-serif;
     text-decoration: none;
     cursor: pointer;
-    padding: 0px 6px;
+    padding-top: 1px;
+    padding-right: 7px;
+    padding-left: 7px;
+    padding-bottom: 3px;
     border: 1px solid #7E7C7C;
     -webkit-border-radius: 50%;
     -moz-border-radius: 50%;
@@ -81,6 +84,7 @@
 .ctx-video-modal .ctx-video-frame {
     position: relative !important;
     z-index: 1000;
+    overflow-y: auto;
 }
 .ctx-video-loading {
     display: block !important;
@@ -107,11 +111,30 @@
 .ctx-modal-social iframe {
     float: left;
 }
+.ctx-video-frame .twitter-tweet-rendered {
+    width: 100% !important;
+}
 /* Mobile Optimization */
-@media all and (min-width: 540px) {
+@media all and (min-width: 800px) {
+    .ctx-video-modal {
+        margin-left: -350px !important;
+        width: 700px !important;
+        top: 10% !important;
+    }
+    .ctx-video-modal .ctx-video-frame {
+        width: 700px !important;
+        max-height: 480px !important;
+        min-height: 380px !important;
+    }
+    .ctx-video-title {
+        width: 90%;
+    }
+}
+@media all and (min-width: 540px) and (max-width: 799px) {
     .ctx-video-modal {
         margin-left: -260px !important;
         width: 450px !important;
+        top: 10% !important;
     }
     .ctx-video-modal .ctx-video-frame {
         width: 450px !important;
@@ -146,4 +169,16 @@
     .ctx-video-title {
         width: 80%;
     }
+}
+
+.ctx-tweet-icon {
+    width: 25px;
+    height: 20px;
+}
+
+.ctx-tweet-icon img {
+    width: 16px;
+    height: 16px;
+    box-shadow: none !important;
+    margin: 0 !important;
 }

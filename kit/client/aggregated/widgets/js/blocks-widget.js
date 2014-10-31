@@ -79,15 +79,16 @@
     getLinkHTML: function(link, linkCounter) {
       if (link.video) {
         return this.getLinkHTMLVideo(link, linkCounter);
-      }
-      else {
+      } else if (link.tweet) {
+        return this.getLinkHTMLTweet(link, linkCounter);
+      } else {
         return this.getLinkHTMLNormal(link, linkCounter);
       }
     },
 
     getInnerLinkHTML: function(link) {
       var inner_html = "<div class='ctx-link-title'>" +
-        "<p class='ctx-nodefs'>" + this.getVideoIcon(link.video) + " " + link.title + "</div>";
+        "<p class='ctx-nodefs'>" + this.getLinkIcon(link) + " " + link.title + "</div>";
       if (this.getLinkThumbnailUrl(link)) {
         inner_html += "<div class='ctx-link-image'><img src='" + link.thumbnail_url + "' class='ctx-nodefs' /></div>";
       }
@@ -101,6 +102,14 @@
         linkClass = " ctx-link-additional-" + linkCounter;
       }
       return "<div class='ctx-link" + linkClass + "'>" + this.getVideoLinkATag(link, this.getInnerLinkHTML(link)) + "</div>";
+    },
+
+    getLinkHTMLTweet: function(link, linkCounter) {
+      var linkClass = "";
+      if (linkCounter > 3) {
+        linkClass = " ctx-link-additional-" + linkCounter;
+      }
+      return "<div class='ctx-link" + linkClass + "'>" + this.getTweetLinkATag(link, this.getInnerLinkHTML(link)) + "</div>";
     },
 
     getLinkHTMLNormal: function(link, linkCounter) {

@@ -100,7 +100,7 @@
           this.getDisplayElement().attr('widget-type', settings.display_type);
         }
 
-        this.attachVideoLinkPopups();
+        this.attachLinksPopups();
       }
       else {
         // Hide content of the snippet placeholder (e.g. Loading...)
@@ -111,7 +111,7 @@
       this.setResponsiveFunction();
     },
 
-    attachVideoLinkPopups: function() {
+    attachLinksPopups: function() {
       function onVideoLinkClick(target, e) {
         e.preventDefault();
         target = $(target);
@@ -123,7 +123,18 @@
         Contextly.MainServerAjaxClient.call(contextly_url);
       }
 
+      function onTweetLinkClick(target, e) {
+        e.preventDefault();
+        target = $(target);
+        var tweetUrl = getVideoUrl(target);
+        openTweetPopup(tweetUrl);
+
+        var contextly_url = getContextlyUrl(target);
+        Contextly.MainServerAjaxClient.call(contextly_url);
+      }
+
       $("a[rel='ctx-video-dataurl']").click(this.proxy(onVideoLinkClick, true, true));
+      $("a[rel='ctx-tweet-dataurl']").click(this.proxy(onTweetLinkClick, true, true));
 
       function getVideoClass() {
         return "ctx-video-modal";
@@ -154,6 +165,11 @@
         showVideoPopup();
       }
 
+      function openTweetPopup(ctxVideoUrl) {
+        $('body').append(createTweetTmp(ctxVideoUrl));
+        showVideoPopup();
+      }
+
       function showVideoPopup() {
         modalFadeIn(getVideoClass());
         modalFadeIn(videoOverlay());
@@ -171,7 +187,7 @@
       }
 
       function createVideoTmp(ctxVideoUrl, videoTitle) {
-        var videoLink = getEmbedLink(ctxVideoUrl);
+        var videoLink = formattedYoutubeLink(ctxVideoUrl);
         var videoId = linkFormatter('v', ctxVideoUrl);
         var videoClass = getVideoClass();
         var videotmp = '<div class="' + videoClass + '">' +
@@ -185,6 +201,16 @@
         return videotmp;
       }
 
+      function createTweetTmp(tweetUrl) {
+        return '<div class="' + getVideoClass() + '">' +
+          '<div class="ctx-video-frame"><blockquote class="twitter-tweet" width="700px"><a href="' + encodeURI(tweetUrl) + '"></a>' +
+          '<div class="ctx-video-loading" ></div></blockquote></div>' +
+          '<script src="//platform.twitter.com/widgets.js" charset="utf-8"></script>' +
+          '<a  href="#" class="ctx-video-close">&#215;</a>' +
+          '</div>' +
+          '<div class="' + videoOverlay() + '" /></div>';
+      }
+
       function facebookLike(ctxVideoUrl) {
         var script = '<iframe src="//www.facebook.com/plugins/like.php?href=' + ctxVideoUrl +
           '&amp;width=100&amp;layout=button&amp;action=like&amp;show_faces=true&amp;share=true&amp;height=20" scrolling="no" frameborder="0" style="border:none; overflow:hidden; width:100px; height:20px;" allowTransparency="true"></iframe>';
@@ -194,10 +220,6 @@
       function twitterIframe(videoId, videoTitle) {
         var script = "<iframe allowtransparency='true' frameborder='0' scrolling='no' src='//platform.twitter.com/widgets/tweet_button.html?text=" + videoTitle + "&url=https%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3D" + videoId + "' style='width:98px; height:20px;'></iframe>";
         return script;
-      }
-
-      function getEmbedLink(ctxVideoUrl) {
-        return formattedYoutubeLink(ctxVideoUrl);
       }
 
       function formattedYoutubeLink(videoUrl) {
@@ -343,15 +365,13 @@
       return 'default-widget';
     },
 
-    getVideoIcon: function(is_video) {
-      if (is_video) {
-        var videoIcon = '<span class="ctx-video-icon"></span>';
+    getLinkIcon: function(link) {
+      if (link.video) {
+        return '<span class="ctx-video-icon"></span>';
+      } else if (link.tweet) {
+        return '<span class="ctx-tweet-icon"><img src="//abs.twimg.com/favicons/favicon.ico"></span>';
       }
-      else {
-        var videoIcon = "";
-      }
-
-      return videoIcon;
+      return '';
     },
 
     // TODO Check if any use cases left after moving to templates and drop.
@@ -363,7 +383,7 @@
       var settings = this.getSettings();
       var html = " onmousedown=\"";
 
-      if (!link.video) {
+      if (!link.video && !link.tweet) {
           html += "this.href='" + this.escape(link.url) + "';"
       }
 
@@ -384,21 +404,27 @@
         content + "</a>";
     },
 
+    getModuleLinkIcon: function(link) {
+        if (this.getModuleType() == Contextly.widget.styles.TEXT) {
+            return this.getLinkIcon(link);
+        }
+        else {
+            return '';
+        }
+    },
+
     getVideoLinkATag: function(link, content) {
-      var moduleType = this.getModuleType();
-
-      if (moduleType == "default") {
-        var videoIcon = this.getVideoIcon(link.video);
-      }
-      else {
-        var videoIcon = "";
-      }
-
       return "<a rel=\"ctx-video-dataurl\" class='ctx-clearfix ctx-nodefs' href=\"" +
         this.escape(link.native_url) + "\" title=\"" +
         this.escape(link.title) + "\" contextly-url=\"" + link.url + "\" " +
-        this.getEventTrackingHtml(link) + ">" +
-        videoIcon + " " + content + "</a>";
+        this.getEventTrackingHtml(link) + ">" + this.getModuleLinkIcon(link) + " " + content + "</a>";
+    },
+
+    getTweetLinkATag: function(link, content) {
+      return "<a rel=\"ctx-tweet-dataurl\" class='ctx-clearfix ctx-nodefs' href=\"" +
+        this.escape(link.native_url) + "\" title=\"" +
+        this.escape(link.title) + "\" contextly-url=\"" + link.url + "\" " +
+        this.getEventTrackingHtml(link) + ">" + this.getModuleLinkIcon(link) + " " + content + "</a>";
     },
 
     getTrackLinkJSHtml: function(link) {
@@ -413,8 +439,9 @@
     getLinkHTML: function(link) {
       if (link.video) {
         return this.getLinkHTMLVideo(link);
-      }
-      else {
+      } else if (link.tweet) {
+        return this.getLinkHTMLTweet(link);
+      } else {
         return this.getLinkHTMLNormal(link);
       }
     },
@@ -425,6 +452,10 @@
 
     getLinkHTMLVideo: function(link) {
       return "<div class='ctx-link'>" + this.getVideoLinkATag(link, this.getInnerLinkHTML(link)) + "</div>";
+    },
+
+    getLinkHTMLTweet: function(link) {
+      return "<div class='ctx-link'>" + this.getTweetLinkATag(link, this.getInnerLinkHTML(link)) + "</div>";
     },
 
     getLinkHTMLNormal: function(link) {
