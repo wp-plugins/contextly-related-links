@@ -58,9 +58,14 @@ Contextly.RESTClient = Contextly.createClass({
                 return;
             }
 
-            var data = easyXDM.getJSONObject().parse(response.data);
-            callback(data);
+            try {
+                var data = easyXDM.getJSONObject().parse(response.data);
+                callback(data);
+            } catch (e) {
+
+            }
         }
+
     }
 
 });

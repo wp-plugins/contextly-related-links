@@ -5,7 +5,7 @@
  */
 class ContextlyKitApi extends ContextlyKitBase {
 
-  const API_VERSION = '1.3.1';
+  const API_VERSION = '1.3.6';
 
   const HEADER_TOKEN = 'Contextly-Access-Token';
   const HEADER_APP_ID = 'Contextly-App-ID';

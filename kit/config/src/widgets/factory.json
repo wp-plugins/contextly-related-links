@@ -4,7 +4,8 @@
     "components/settings",
     "components/proxy",
     "components/api-client",
-    "components/main-server-client"
+    "components/main-server-client",
+    "components/cookie"
   ],
 
   "base": "widgets",
