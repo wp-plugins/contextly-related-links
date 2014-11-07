@@ -1,7 +1,6 @@
 {
   "include": [
-    "libraries/handlebars",
-    "libraries/jquery"
+    "libraries/handlebars"
   ],
 
   "base": "components",

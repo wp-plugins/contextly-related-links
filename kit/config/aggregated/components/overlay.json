@@ -1,1 +1,1 @@
-{"css":["components--overlay"],"js":["components--overlay"]}
+{"include":["libraries\/jquery"],"css":["components--overlay"],"js":["components--overlay"]}

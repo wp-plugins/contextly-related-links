@@ -5,7 +5,7 @@
  */
 class ContextlyKitApi extends ContextlyKitBase {
 
-  const API_VERSION = '1.2.3';
+  const API_VERSION = '1.3.1';
 
   const HEADER_TOKEN = 'Contextly-Access-Token';
   const HEADER_APP_ID = 'Contextly-App-ID';
@@ -227,7 +227,6 @@ class ContextlyKitApi extends ContextlyKitBase {
 
     // Parse API response and check it.
     $result = json_decode($response->body);
-
     if ($result === NULL) {
       throw $this->kit->newApiException("Unable to decode JSON response from server.", $request, $response);
     }
@@ -268,7 +267,7 @@ class ContextlyKitApi extends ContextlyKitBase {
    */
   protected function authorize() {
     if ($this->session->getToken()->isValid()) {
-	    return;
+      return;
     }
 
     $request = $this->kit->newApiRequest();
@@ -285,9 +284,8 @@ class ContextlyKitApi extends ContextlyKitBase {
     }
 
     $token = $this->kit->newApiToken($result->access_token);
-
     if (!$token->isValid()) {
-	    throw $this->kit->newException('Received invalid access token.');
+      throw $this->kit->newException('Received invalid access token.');
     }
 
     $this->session->setToken($token);
@@ -637,8 +635,8 @@ class ContextlyKitApiToken extends ContextlyKitBase implements ContextlyKitApiTo
     // Check if token is expired. Make sure we have some expiration reserve to
     // perform operations using this token before it will become expired. Also,
     // the time difference is possible between local and remote servers.
-	if ($this->expires < time() + self::EXPIRATION_RESERVE) {
-	    return FALSE;
+    if ($this->expires < time() + self::EXPIRATION_RESERVE) {
+      return FALSE;
     }
 
     return TRUE;
