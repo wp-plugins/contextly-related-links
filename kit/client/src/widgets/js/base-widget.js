@@ -70,7 +70,15 @@
     },
 
     hasWidgetData: function () {
-      return this.widget && this.widget.links;
+        if ( this.widget && this.widget.links ) {
+            var links = this.widget.links;
+            for(var prop in links) {
+                if (links.hasOwnProperty(prop)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     },
 
     // TODO Replace use cases with template and drop.
@@ -92,7 +100,9 @@
 
     display: function() {
       if (this.hasWidgetData()) {
-        this.displayHTML(this.getWidgetHTML());
+        var widget_html = this.getWidgetHTML();
+
+        this.displayHTML( widget_html );
         this.loadCss('widget-css');
 
         var settings = this.getSettings();
@@ -104,8 +114,7 @@
       }
       else {
         // Hide content of the snippet placeholder (e.g. Loading...)
-        this.getDisplayElement()
-          .empty();
+        this.getDisplayElement().empty();
       }
 
       this.setResponsiveFunction();
@@ -524,9 +533,9 @@
             var visCond = "hidden";
           }
 
-          for (var keys in linkNumberArray) {
-            $(".ctx-link-additional-" + linkNumberArray).css("display", dispCond);
-            $(".ctx-link-additional-" + linkNumberArray).css("visibility", visCond);
+          for ( var i = 0; i < linkNumberArray.length; i++ ) {
+            var link_pos = linkNumberArray[i];
+            $(".ctx-link-additional-" + link_pos).css("display", dispCond).css("visibility", visCond);
           }
         }
 

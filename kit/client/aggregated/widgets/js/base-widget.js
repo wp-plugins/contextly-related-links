@@ -524,9 +524,9 @@
             var visCond = "hidden";
           }
 
-          for (var keys in linkNumberArray) {
-            $(".ctx-link-additional-" + linkNumberArray).css("display", dispCond);
-            $(".ctx-link-additional-" + linkNumberArray).css("visibility", visCond);
+          for (var key in linkNumberArray) {
+            $(".ctx-link-additional-" + linkNumberArray[key]).css("display", dispCond);
+            $(".ctx-link-additional-" + linkNumberArray[key]).css("visibility", visCond);
           }
         }
 

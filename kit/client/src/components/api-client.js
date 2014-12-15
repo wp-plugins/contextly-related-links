@@ -34,7 +34,8 @@ Contextly.RESTClient = Contextly.createClass({
                 c_date: s.getPostCreatedDate(),
                 m_date: s.getPostModifiedDate(),
                 c_count: s.getPostCategoriesCount(),
-                t_count: s.getPostTagsCount()
+                t_count: s.getPostTagsCount(),
+                url: s.getPageUrl()
             });
 
             var self = this;

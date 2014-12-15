@@ -5,7 +5,10 @@
     "components/proxy",
     "components/api-client",
     "components/main-server-client",
-    "components/cookie"
+    "components/cookie",
+    "components/view",
+    "components/events",
+    "components/loader"
   ],
 
   "base": "widgets",

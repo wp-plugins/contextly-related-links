@@ -81,37 +81,36 @@
     },
 
     display: function() {
-      var self = this;
+      if ( this.hasWidgetData() && !Contextly.Settings.isAdmin() ) {
+        this.show();
+      }
+    },
 
-      $(document).ready(
-        function() {
-          if (self.hasWidgetData() && !Contextly.Settings.isAdmin()) {
-            // Build widget html and display it
-            var html = self.getWidgetHTML();
-            self.displayHTML(html);
+    show: function () {
+        // Build widget html and display it
+        var html = this.getWidgetHTML();
+        this.displayHTML(html);
 
-            // Do some sidebar modifications
-            self.getDisplayElement().removeClass('ctx-sidebar-container')
-              .addClass('ctx-sidebar')
-              .addClass('ctx-sidebar-' + self.widget.layout)
-              .addClass('ctx-sb-clearfix');
+        // Do some sidebar modifications
+        this.getDisplayElement().removeClass('ctx-sidebar-container')
+            .addClass('ctx-sidebar')
+            .addClass('ctx-sidebar-' + this.widget.layout)
+            .addClass('ctx-sb-clearfix');
 
-            // Check if we need to add sidebar title and description
-            var title = self.widget.name;
-            var description = self.widget.description;
-            var sidebar_content = self.getDisplayElement().find('.ctx-content-sidebar');
+        // Check if we need to add sidebar title and description
+        var title = this.widget.name;
+        var description = this.widget.description;
+        var sidebar_content = this.getDisplayElement().find('.ctx-content-sidebar');
 
-            if (description) {
-              sidebar_content.prepend("<div class='ctx-sb-description'><p>" + self.escape(description) + "</p></div>");
-            }
-            if (title) {
-              sidebar_content.prepend("<div class='ctx-sb-title'><p>" + self.escape(title) + "</p></div>");
-            }
+        if (description) {
+            sidebar_content.prepend("<div class='ctx-sb-description'><p>" + this.escape(description) + "</p></div>");
+        }
+        if (title) {
+            sidebar_content.prepend("<div class='ctx-sb-title'><p>" + this.escape(title) + "</p></div>");
+        }
 
-            self.loadCss('sidebar-css');
-            self.setResponsiveFunction();
-          }
-        });
+        this.loadCss('sidebar-css');
+        this.setResponsiveFunction();
     },
 
     getWidgetCSSUrl: function() {
