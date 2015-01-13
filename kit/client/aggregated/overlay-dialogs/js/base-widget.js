@@ -22,11 +22,6 @@
     getTemplateHandlers: function() {
       var handlers = Contextly.overlayDialog.Base.prototype.getTemplateHandlers.apply(this, arguments);
 
-      handlers.editor = handlers.editor || [];
-      handlers.editor.push(
-        this.refreshDialogActions
-      );
-
       handlers.sectionLinks = handlers.sectionLinks || [];
       handlers.sectionLinks.push(
         this.initHidden,
@@ -257,15 +252,10 @@
       // Save reference to the widget link for future use.
       this.state.previewWidgetLink = $(target).closest('.section-link')
 
-      // Set up buttons state and attach event handlers.
-      this.e.urlPreviewConfirm.hide();
-      this.e.urlPreviewRemove
-        .unbind('click')
-        .show();
-      this.onClick(this.e.urlPreviewRemove, this.onWidgetLinkPreviewRemove);
-
       // Show the preview.
-      this.previewUrl($(target).attr('href'));
+      this.showUrlPreview($(target).attr('href'), {
+        remove: this.onWidgetLinkPreviewRemove
+      });
     },
 
     onWidgetLinkPreviewRemove: function() {

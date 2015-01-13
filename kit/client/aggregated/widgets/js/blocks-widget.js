@@ -48,8 +48,8 @@
       var sections = this.widget.settings.display_sections;
 
       div += "<div class='ctx-sections-container ctx-nomar'>";
-      for (var section in sections) {
-        var section_name = sections[section];
+      for (var i = 0; i < sections.length; i++ ) {
+        var section_name = sections[i];
 
         if (this.isDisplaySection(section_name)) {
           var section_key = section_name + '_subhead';

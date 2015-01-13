@@ -8,7 +8,7 @@
     </a>
     <div class="url-preview-buttons">
       {{#unless editor.isLink}}
-        <button class="url-preview-remove btn btn-mini btn-danger hidden">
+        <button class="url-preview-remove btn btn-mini btn-danger">
           <i class="icon-trash"></i> {{t 'Remove link'}}
         </button>
       {{/unless}}
@@ -18,11 +18,11 @@
       </button>
 
       {{#if editor.isLink}}
-        <button class="url-preview-confirm btn btn-mini btn-success hidden">
+        <button class="url-preview-confirm btn btn-mini btn-success">
           <i class="icon-ok"></i> {{t 'Use link'}}
         </button>
       {{else}}
-        <button class="url-preview-confirm btn btn-mini hidden">
+        <button class="url-preview-confirm btn btn-mini">
           <i class="icon-arrow-right"></i> {{t 'Add link'}}
         </button>
       {{/if}}

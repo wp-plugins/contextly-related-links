@@ -14,25 +14,34 @@
       Contextly.overlayDialog.BaseWidget.prototype.initState.call(this);
 
       var id = this.api.getSidebarId();
-      if (id && this.settings.sidebars[id]) {
-        this.state.id = id;
-        this.state.sidebar = this.settings.sidebars[id];
-        this.state.layout = this.state.sidebar.layout;
-      }
-      else {
-        this.state.id = null;
-        this.state.sidebar = {};
-        this.state.layout = 'left';
-      }
+      this.initSidebarContentState(id);
 
       this.state.previewTitle = null;
 
       // Register sidebars search type.
       this.searchTypes['sidebars'] = {
         template: 'searchResultsSidebars',
+        emptyQuery: true,
         search: this.proxy(this.performSidebarsSearchQuery, false, true),
         render: this.proxy(this.renderSidebarsSearchResults, false, true)
       };
+    },
+
+    initSidebarContentState: function(id) {
+      if (id && this.settings.sidebars[id]) {
+        this.state.id = id;
+        this.state.sidebar = this.settings.sidebars[id];
+        this.state.layout = this.state.sidebar.layout;
+        this.state.pane = 'edit';
+      }
+      else {
+        this.state.id = null;
+        this.state.sidebar = {};
+        this.state.layout = 'left';
+        this.state.pane = 'create';
+      }
+
+      this.state.changed = false;
     },
 
     getTemplateHandlers: function() {
@@ -40,14 +49,47 @@
 
       handlers.editor = handlers.editor || [];
       handlers.editor.push(
-        this.refreshLayoutSwitches
+        this.renderSidebarPaneTypes,
+        this.renderSidebarPane
+      );
+
+      handlers.sidebarPaneTypes = handlers.sidebarPaneTypes || [];
+      handlers.sidebarPaneTypes.push(
+        this.bindSidebarPaneTypesEvents
+      );
+
+      handlers.sidebarChooser = handlers.sidebarChooser || [];
+      handlers.sidebarChooser.push(
+        this.initHidden,
+        this.findSidebarChooserElements,
+        this.bindSidebarChooserEvents,
+        this.bindSidebarsCollapsibleLinksEvents,
+        this.initSidebarsCollapsibleLinks
+      );
+
+      handlers.sidebarContentEditor = handlers.sidebarContentEditor || [];
+      handlers.sidebarContentEditor.push(
+        this.initHidden,
+        this.findContentEditorElements,
+        this.bindContentEditorEvents,
+        this.refreshLayoutSwitches,
+        this.refreshDialogActions,
+        this.refreshSearchTabs
       );
 
       handlers.searchResultsSidebars = handlers.searchResultsSidebars || [];
       handlers.searchResultsSidebars.push(
         this.initHidden,
         this.bindSearchResultsSidebarsEvents,
-        this.initSearchSidebarsResults
+        this.bindSidebarsCollapsibleLinksEvents,
+        this.initSearchSidebarsResults,
+        this.initSidebarsCollapsibleLinks
+      );
+
+      handlers.modalDialog = handlers.modalDialog || [];
+      handlers.modalDialog.push(
+        this.findModalDialogElements,
+        this.bindModalDialogEvents
       );
 
       return handlers;
@@ -60,27 +102,160 @@
     },
 
     getEditorVariables: function() {
-      var vars = Contextly.overlayDialog.BaseWidget.prototype.getEditorVariables.apply(this, arguments);
-
-      vars.sidebar = this.state.sidebar;
-
-      return vars;
+      return {};
     },
 
-    renderEditor: function() {
-      Contextly.overlayDialog.BaseWidget.prototype.renderEditor.apply(this, arguments);
+    getSidebarPaneTypes: function() {
+      var paneTypes = {};
+
+      if (this.state.id === null) {
+        paneTypes['create'] = {
+          type: 'create',
+          icon: 'file-alt',
+          title: this.t('New sidebar'),
+          changed: this.state.changed,
+          render: this.renderSidebarContentEditor
+        };
+      }
+      else {
+        paneTypes['edit'] = {
+          type: 'edit',
+          icon: 'pencil',
+          title: this.t('Edit selected sidebar'),
+          changed: this.state.changed,
+          render: this.renderSidebarContentEditor
+        };
+      }
+
+      if (!$.isEmptyObject(this.settings.sidebars)) {
+        paneTypes['choose'] = {
+          type: 'choose',
+          icon: 'th-list',
+          title: this.t('Select sidebar to edit'),
+          changed: false,
+          render: this.renderSidebarChooser
+        };
+      }
+
+      return paneTypes;
+    },
+
+    findEditorElements: function() {
+      this.e.sidebarPaneTypes = this.e.editor.find('ul.sidebar-pane-types');
+      this.e.sidebarPaneContainer = this.e.editor.find('div.sidebar-pane-container');
+    },
+
+    bindEditorEvents: function() {
+      // Do nothing.
+    },
+
+    initEditor: function() {
+      // Do nothing.
+    },
+
+    renderSidebarPaneTypes: function() {
+      this.e.sidebarPaneTypes.empty();
+
+      this.renderTemplate('sidebarPaneTypes', {
+        paneTypes: this.getSidebarPaneTypes()
+      }, this.e.sidebarPaneTypes);
+
+      this.e.sidebarPaneTypes
+        .children('li')
+        .filter('[data-pane-type="' + this.escapeSizzleAttrValue(this.state.pane) + '"]')
+        .addClass('active');
+    },
+
+    bindSidebarPaneTypesEvents: function() {
+      this.onClick(this.e.sidebarPaneTypes.children('li'), this.onSidebarPaneTypeSelect, true);
+    },
+
+    onSidebarPaneTypeSelect: function(target, e) {
+      e.preventDefault();
+
+      var $target = $(target);
+
+      var item = $target.closest('.sidebar-pane-type');
+      if (item.hasClass('active') || item.hasClass('disabled')) {
+        return;
+      }
+
+      var type = $target.attr('data-pane-type');
+      if (!type) {
+        return;
+      }
+
+      this.state.pane = type;
+      this.renderSidebarPaneTypes();
+      this.renderSidebarPane();
+    },
+
+    renderSidebarPane: function() {
+      var map = this.getSidebarPaneTypes();
+      if (!map[this.state.pane]) {
+        $.error('Unknown sidebar pane type: ' + this.state.pane);
+      }
+
+      // Hide all panes, renderer is responsible for showing its pane.
+      this.e.sidebarPaneContainer
+        .children('.sidebar-pane')
+        .hide();
+      map[this.state.pane].render.call(this);
+    },
+
+    renderSidebarChooser: function() {
+      if (this.e.sidebarChooser) {
+        this.e.sidebarChooser.show();
+        return;
+      }
+
+      var vars = {
+        sidebars: this.settings.sidebars
+      };
+      this.renderTemplate('sidebarChooser', vars, this.e.sidebarPaneContainer);
+    },
+
+    findSidebarChooserElements: function() {
+      this.e.sidebarChooser = this.e.sidebarPaneContainer
+        .children('.sidebar-chooser');
+    },
+
+    bindSidebarChooserEvents: function(container) {
+      var linkPreview = container.find('.search-sidebar-link');
+      var sidebarEdit = container.find('.sidebar-edit');
+      this.onClick(linkPreview, this.onSidebarChooserLinkPreview, true);
+      this.onClick(sidebarEdit, this.onSidebarChooserEdit, true);
+    },
+
+    renderSidebarContentEditor: function() {
+      if (this.e.sidebarContentEditor) {
+        // Sidebar chooser is responsible for removing content editor on
+        // switching sidebar, so we only show our pane.
+        this.e.sidebarContentEditor.show();
+        return;
+      }
+
+      var vars = Contextly.overlayDialog.BaseWidget.prototype.getEditorVariables.apply(this, arguments);
+      vars.sidebar = this.state.sidebar;
+      this.renderTemplate('sidebarContentEditor', vars, this.e.sidebarPaneContainer);
 
       // Render section links.
       if (this.state.sidebar.links && this.state.sidebar.links.previous) {
-        var vars = {
+        vars = {
           links: this.state.sidebar.links.previous
         };
         this.renderTemplate('sectionLinks', vars, this.e.sectionLinks);
       }
     },
 
-    findEditorElements: function() {
+    findContentEditorElements: function(container) {
+      // Call parent function suitable for the whole editor, since all of the
+      // expected elements are inside the content editor.
       Contextly.overlayDialog.BaseWidget.prototype.findEditorElements.apply(this, arguments);
+
+      // Find the content editor root.
+      this.e.sidebarContentEditor = this.e.sidebarPaneContainer
+        .children('.sidebar-content-editor');
 
       // Sidebar settings.
       var sidebarSettings = this.e.sidebar.find('.sidebar-settings');
@@ -88,17 +263,15 @@
       this.e.sidebarDescription = sidebarSettings.find('.sidebar-description');
       this.e.sidebarLayoutSwitches = sidebarSettings.find('.sidebar-layout-switch');
 
-      // Modal dialog and its confirmation button.
-      this.e.sidebarModal = sidebarSettings.find('.sidebar-modal');
-      this.e.sidebarModalConfirm = this.e.sidebarModal.find('.sidebar-modal-confirm');
-
       // Results wrapper.
       this.e.sidebarResult = this.e.sidebar.find('.sidebar-result');
       this.e.sectionLinks = this.e.sidebarResult.find('.section-links');
       this.e.sidebarAddToRelated = this.e.sidebarResult.find('.sidebar-add-to-related');
     },
 
-    bindEditorEvents: function() {
+    bindContentEditorEvents: function() {
+      // Call parent function suitable for the whole editor, since all of the
+      // expected elements are inside the content editor.
       Contextly.overlayDialog.BaseWidget.prototype.bindEditorEvents.apply(this, arguments);
 
       // Layout switch buttons.
@@ -107,20 +280,70 @@
       // Prevent enter on sidebar description.
       this.onEnter(this.e.sidebarDescription, this.onTextareaEnter, true);
 
-      // Confirmation button on the modal.
-      this.onClick(this.e.sidebarModalConfirm, this.onSidebarModalConfirm);
+      // Mark sidebar as changed on title or description changes.
+      this.on('change', this.e.sidebarTitle, this.markSidebarChanged);
+      this.on('change', this.e.sidebarDescription, this.markSidebarChanged);
+    },
+
+    /**
+     * Displays modal dialog.
+     *
+     * @param params
+     *   Supported parameters:
+     *   - title
+     *   - body
+     *   - dismiss
+     *   - confirm
+     *   - onConfirm
+     *
+     * @returns {boolean}
+     */
+    showModal: function(params) {
+      if (this.e.modalDialog) {
+        // Modal dialog is already displayed.
+        return false;
+      }
+
+      params = $.extend({
+        title: '',
+        body: '',
+        dismiss: '',
+        confirm: '',
+        onConfirm: null
+      }, params);
+
+      this.renderTemplate('modalDialog', params, $('body'));
+      if ($.isFunction(params.onConfirm)) {
+        this.onClick(this.e.modalDialogConfirm, params.onConfirm);
+      }
+      this.e.modalDialog.modal();
+
+      return true;
+    },
+
+    findModalDialogElements: function(container) {
+      // Modal dialog and its confirmation button.
+      this.e.modalDialog = container.find('.modal');
+      this.e.modalDialogConfirm = this.e.modalDialog.find('.sidebar-modal-confirm');
+    },
+
+    bindModalDialogEvents: function() {
+      // Destroy the modal when it was dismissed.
+      this.on('hidden', this.e.modalDialog, this.onModalClosed);
+    },
+
+    onModalClosed: function() {
+      this.e.modalDialog.remove();
+      delete this.e.modalDialog;
+      delete this.e.modalDialogConfirm;
     },
 
     bindSearchResultsSidebarsEvents: function(container) {
       // Search sidebars result buttons, dropdown menu & links toggles.
       var addButtons = container.find('.search-sidebar-add-all');
       var overwriteButtons = container.find('.search-sidebar-overwrite');
-      var collapseButtons = container.find('.search-sidebar-links-collapse');
-      var expandButtons = container.find('.search-sidebar-links-expand');
       this.onClick(addButtons, this.onSearchSidebarAddAll, true);
       this.onClick(overwriteButtons, this.onSearchSidebarOverwrite, true);
-      this.onClick(collapseButtons, this.onSearchSidebarLinksCollapse, true);
-      this.onClick(expandButtons, this.onSearchSidebarLinksExpand, true);
 
       // Links inside found sidebars.
       var contentItems = container.find('.search-sidebar-content-item');
@@ -130,8 +353,40 @@
       this.onClick(linkAdd, this.onSearchSidebarLinkAdd, true);
     },
 
+    bindSidebarsCollapsibleLinksEvents: function(container) {
+      var collapseButtons = container.find('.search-sidebar-links-collapse');
+      var expandButtons = container.find('.search-sidebar-links-expand');
+      this.onClick(collapseButtons, this.onSearchSidebarLinksCollapse, true);
+      this.onClick(expandButtons, this.onSearchSidebarLinksExpand, true);
+    },
+
+    bindSectionLinksEvents: function(container, elements) {
+      Contextly.overlayDialog.BaseWidget.prototype.bindSectionLinksEvents.apply(this, arguments);
+
+      this.on('change', elements.find('.link-title-editor'), this.markSidebarChanged);
+    },
+
+    markSidebarChanged: function() {
+      if (this.state.changed) {
+        return;
+      }
+
+      this.state.changed = true;
+      this.e.sidebarPaneTypes
+        .find('.sidebar-pane-type')
+        .filter('[data-pane-type="' + this.escapeSizzleAttrValue(this.state.pane) + '"]')
+        .find('.sidebar-modified-flag')
+        .show();
+    },
+
     onLayoutChange: function(target) {
-      this.state.layout = $(target).attr('data-layout');
+      var desiredLayout = $(target).attr('data-layout');
+      if (this.state.layout === desiredLayout) {
+        return;
+      }
+
+      this.state.layout = desiredLayout;
+      this.markSidebarChanged();
       this.refreshLayoutSwitches();
     },
 
@@ -190,6 +445,7 @@
     },
 
     removeAllWidgetLinks: function() {
+      this.markSidebarChanged();
       this.e.sectionLinks
         .contextlySortable('destroy');
 
@@ -199,6 +455,8 @@
         var sectionLink = sectionLinks.eq(i);
         Contextly.overlayDialog.BaseWidget.prototype.removeWidgetLink.call(this, sectionLink);
       }
+
+      this.e.sidebarResult.hide();
     },
 
     buildSidebarData: function() {
@@ -217,15 +475,9 @@
         .find('.search-sidebar-link-title')
         .text();
 
-      // Set up buttons state and attach event handlers.
-      this.e.urlPreviewRemove.hide();
-      this.e.urlPreviewConfirm
-        .unbind('click')
-        .show();
-      this.onClick(this.e.urlPreviewConfirm, this.onSearchSidebarLinkPreviewConfirm);
-
-      // Show the preview.
-      this.previewUrl($(target).attr('href'));
+      this.showUrlPreview($target.attr('href'), {
+        confirm: this.onSearchSidebarLinkPreviewConfirm
+      });
     },
 
     onSearchSidebarLinkPreviewConfirm: function() {
@@ -235,6 +487,48 @@
 
       this.closeUrlPreview();
       this.addSearchSidebarLink(title, url);
+    },
+
+    onSidebarChooserLinkPreview: function(target, e) {
+      e.preventDefault();
+
+      this.showUrlPreview($(target).attr('href'));
+    },
+
+    onSidebarChooserEdit: function(target) {
+      var desiredId = $(target)
+        .closest('.search-result')
+        .attr('data-sidebar-id');
+
+      if (this.state.changed && desiredId !== this.state.id) {
+        this.showModal({
+          title: this.t('All changes to the opened sidebar will be lost!'),
+          body: this.t('Do you really want to discard all the changes made to the opened sidebar and edit selected one?'),
+          dismiss: this.t('No, keep changes and current sidebar'),
+          confirm: this.t('Yes, discard changes and edit selected'),
+          onConfirm: function() {
+            this.changeSidebar(desiredId);
+          }
+        });
+      }
+      else {
+        this.changeSidebar(desiredId);
+      }
+    },
+
+    changeSidebar: function(desiredId) {
+      if (desiredId !== this.state.id) {
+        this.initSidebarContentState(desiredId);
+        this.e.sidebarContentEditor.remove();
+        delete this.e.sidebarContentEditor;
+      }
+      else {
+        this.state.pane = 'edit';
+      }
+
+      // Refresh tabs and pane content.
+      this.renderSidebarPaneTypes();
+      this.renderSidebarPane();
     },
 
     closeUrlPreview: function() {
@@ -255,6 +549,7 @@
 
     addSearchSidebarLink: function(title, url) {
       this.e.sidebarResult.show();
+      this.markSidebarChanged();
 
       this.renderSectionLink({
         title: title,
@@ -268,7 +563,12 @@
     },
 
     addSearchSidebarLinks: function(sidebar) {
+      if (!sidebar.links || !sidebar.links.previous || !sidebar.links.previous.length) {
+        return;
+      }
+
       this.e.sidebarResult.show();
+      this.markSidebarChanged();
 
       // Re-build the list of links to avoid "stealing" links from other
       // sidebars.
@@ -340,27 +640,9 @@
 
     onDialogSave: function() {
       var sidebarData = this.buildSidebarData();
-
-      /**
-       Do not display confirmation for sidebars with empty title
-
-      if (!sidebarData.name && !sidebarData.description) {
-        this.e.sidebarModal.modal();
-      }
-      else {
-        this.saveSidebar(sidebarData);
-      }
-      */
-
       this.saveSidebar(sidebarData);
 
       return false;
-    },
-
-    onSidebarModalConfirm: function() {
-      this.e.sidebarModal.modal('hide');
-      var sidebar = this.buildSidebarData();
-      this.saveSidebar(sidebar);
     },
 
     saveSidebar: function(data) {
@@ -431,8 +713,14 @@
     },
 
     onDialogSaveSuccess: function(data) {
-      // Call the callback first, then update sidebar and the snippet.
-      this.api.callback(data.sidebar);
+      // TODO Provide better API and drop this backward compatibility workaround.
+      // Call the callback only in case the sidebar haven't been changed through
+      // chooser tab.
+      if (this.state.id === this.api.getSidebarId()) {
+        this.api.callback(data.sidebar);
+      }
+
+      // Update sidebar and the snippet if necessary.
       this.api.setSidebar(data.sidebar);
       if (data.snippet) {
         this.api.setSnippet(data.snippet);
@@ -538,14 +826,34 @@
       return false;
     },
 
+    onLinkRemove: function() {
+      this.markSidebarChanged();
+
+      Contextly.overlayDialog.BaseWidget.prototype.onLinkRemove.apply(this, arguments);
+    },
+
+    performUrlInfoRequest: function() {
+      var started = Contextly.overlayDialog.BaseWidget.prototype.performUrlInfoRequest.apply(this, arguments);
+
+      // Adding widget links from both normal search results and adding URL
+      // directly end up in this function, so we use it to set "changed" flag.
+      if (started) {
+        this.markSidebarChanged();
+      }
+
+      return started;
+    },
+
     initSearchSidebarsResults: function(container) {
       // Bootstrap dropdown.
       container
         .find('.search-sidebar-actions-toggle')
         .dropdown();
+    },
 
+    initSidebarsCollapsibleLinks: function(container) {
       // Collapse links by default if there are more than limit + 1 links.
-      this.eachElement(container.find('li.search-sidebars-result'), function(element) {
+      this.eachElement(container.find('li.search-result'), function(element) {
         var items = element.find('.search-sidebar-content-item');
         if (items.size() > this.settings.sidebarsSearchLinksLimit + 1) {
           var toggles = element.find('.search-sidebar-links-toggles');
@@ -575,6 +883,24 @@
       });
 
       return elements;
+    },
+
+    lockDialogActions: function() {
+      Contextly.overlayDialog.BaseWidget.prototype.lockDialogActions.apply(this, arguments);
+
+      this.e.sidebarPaneTypes
+        .find('.sidebar-pane-type:not(.active):not(.disabled)')
+        .addClass('disabled');
+    },
+
+    unlockDialogActions: function() {
+      Contextly.overlayDialog.BaseWidget.prototype.unlockDialogActions.apply(this, arguments);
+
+      if (this.state.actionsLocked == 0) {
+        this.e.sidebarPaneTypes
+          .find('.sidebar-pane-type.disabled')
+          .removeClass('disabled');
+      }
     }
 
   });

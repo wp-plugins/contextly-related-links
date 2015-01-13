@@ -405,7 +405,7 @@ class ContextlyKitWidgetsEditor extends ContextlyKitBase {
         'handleSearchRequest',
         array(
           'type' => TRUE,
-          'query' => TRUE,
+          'query' => FALSE,
           'page' => TRUE,
           'site_url' => FALSE,
           'sidebar_id' => FALSE,
@@ -506,21 +506,41 @@ class ContextlyKitWidgetsEditor extends ContextlyKitBase {
     // TODO: Make it configurable from outside of the class.
     $limit = 10;
 
+    $map = array(
+      'links' => array(
+        'method' => 'searchLinks',
+        'params' => array(
+          'site_url' => '',
+        ),
+      ),
+      'sidebars' => array(
+        'empty_query' => TRUE,
+        'method' => 'searchSidebars',
+        'params' => array(
+          'sidebar_id' => NULL,
+        ),
+      ),
+    );
+
     $type = $params['type'];
-    switch ($type) {
-      case 'links':
-        $params += array('site_url' => '');
-        $result = $this->searchLinks($params['site_url'], $params['query'], $params['page'], $limit);
-        break;
-
-      case 'sidebars':
-        $params += array('sidebar_id' => NULL);
-        $result = $this->searchSidebars($params['sidebar_id'], $params['query'], $params['page'], $limit);
-        break;
-
-      default:
-        throw $this->kit->newWidgetsEditorException('Unknown search type ' . $type, 'search', $params);
+    if (!isset($map[$type])) {
+      throw $this->kit->newWidgetsEditorException('Unknown search type ' . $type, 'search', $params);
     }
+
+    $specs = $map[$type];
+    $params += $specs['params'];
+
+    // Trim and validate query.
+    $params['query'] = isset($params['query']) ? trim($params['query']) : '';
+    if ($params['query'] === '' && empty($specs['empty_query'])) {
+      throw $this->kit->newWidgetsEditorException("Query is required for this type of search.", 'search', $params);
+    }
+
+    // Run search method.
+    $method = $specs['method'];
+    $args = array_values(array_intersect_key($params, $specs['params']));
+    $args = array_merge($args, array($params['query'], $params['page'], $limit));
+    $result = call_user_func_array(array($this, $method), $args);
 
     // Normalize URL to be at least empty string.
     if (empty($result['siteUrl'])) {

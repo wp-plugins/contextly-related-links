@@ -10,6 +10,10 @@
   ],
   "tpl": {
     "editor": "tpl/sidebar-editor",
+    "modalDialog": "tpl/modal-dialog",
+    "sidebarPaneTypes": "tpl/sidebar-pane-types",
+    "sidebarChooser": "tpl/sidebar-chooser",
+    "sidebarContentEditor": "tpl/sidebar-content-editor",
     "searchResultsSidebars": "tpl/search-results-sidebars"
   }
 }
