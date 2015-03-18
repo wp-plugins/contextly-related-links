@@ -295,13 +295,13 @@
     },
 
     _lockBodyScroll: function() {
-      var existingStyle = this.html.attr('style');
+      // Store scroll position and current HTML element style.
       var data = {
         scroll: {
           top: this.window.scrollTop(),
           left: this.window.scrollLeft()
         },
-        style: existingStyle ? existingStyle : ''
+        style: this.html.attr('style')
       };
 
       // The trick here is that the fixed element with dimensions larger than
@@ -329,7 +329,8 @@
       if (data) {
         // Restore "style" attribute back to its state before we locked the
         // document scrolling. This also removes the scroll lock and our styles.
-        this.html.attr('style', data.style);
+        // Use non-empty string to be sure style is overwritten (IE 8 fix).
+        this.html.attr('style', data.style || ' ');
 
         // Scroll the page back to its original position.
         this.window

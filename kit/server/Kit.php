@@ -190,10 +190,10 @@ class ContextlyKit {
       'api' => array(
         'dev' => 'http://devrest.contextly.com/',
         'live' => array(
-	      'http' => 'http://rest.contextly.com/',
-	      'https' => 'https://rest.contextly.com/',
-        )
-      )
+          'http' => 'http://rest.contextly.com/',
+          'https' => 'https://rest.contextly.com/',
+        ),
+      ),
     );
   }
 
@@ -210,15 +210,16 @@ class ContextlyKit {
     else {
       $keys = array();
       $keys[] = $this->settings->mode;
-	  $keys[] = $this->isHttps() ? 'https' : 'http';
+      $keys[] = $this->isHttps() ? 'https' : 'http';
 
       foreach ($keys as $key) {
-	    if (isset($serverUrls[$key])) {
-	      if ( is_string($serverUrls[$key]) ) {
-		    return $serverUrls[$key];
-	      } else {
-		    $serverUrls = $serverUrls[$key];
-	      }
+        if (isset($serverUrls[$key])) {
+          if (is_string($serverUrls[$key])) {
+            return $serverUrls[$key];
+          }
+          else {
+            $serverUrls = $serverUrls[$key];
+          }
         }
       }
 

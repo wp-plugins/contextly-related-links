@@ -119,16 +119,17 @@ body.contextly-overlay .btn {
 }
 
 .search-results {
-  display: block;
-  padding: 0;
-  margin: 0;
-}
-
-.search-result {
   display: table;
   padding: 0;
   margin: 0;
   width: 100%;
+  border-collapse: collapse;
+}
+
+.search-result {
+  display: table-row;
+  padding: 0;
+  margin: 0;
   border-bottom: 1px dashed #dddddd;
 }
 
@@ -178,6 +179,12 @@ body.contextly-overlay .btn {
 
 .btn.search-sidebar-add-single {
   vertical-align: baseline;
+}
+
+.search-no-results {
+  padding: 20px;
+  text-align: center;
+  font-size: 14px;
 }
 
 /* ~~ Editor components ~~ */
@@ -309,4 +316,29 @@ body.contextly-overlay .btn {
 
 .sidebar-add-to-related-wrapper {
   margin-top: 20px;
+}
+
+.sidebar-chooser .search-results {
+  min-width: 700px;
+  max-width: 900px;
+  width: 70%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.sidebar-pane-types {
+  margin-bottom: 0;
+  padding: 0 10px 3px 10px;
+  border-bottom: 1px solid #dddddd;
+  text-align: center;
+}
+
+.nav-pills > li.sidebar-pane-type {
+  float: none;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.sidebar-pane-container {
+  padding-top: 20px;
 }

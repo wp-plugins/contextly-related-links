@@ -55,9 +55,7 @@
       return {
         inputFields: true,
         searchTabs: true,
-        searchPager: true,
-        urlPreview: true,
-        progressIndicator: true
+        searchPager: true
       };
     },
 
@@ -67,13 +65,16 @@
         lockedControls: null,
         previewUrl : null,
         scrollTop: 0,
-        scrollLeft: 0
+        scrollLeft: 0,
+        searchResults: {},
+        searchQuery: ''
       };
 
       // By default support only links search.
       this.searchTypes = {
         links: {
           template: 'searchResultsLinks',
+          emptyQuery: false,
           search: this.proxy(this.performLinksSearchQuery, false, true),
           render: this.proxy(this.renderLinksSearchResults, false, true)
         }
@@ -92,20 +93,39 @@
       return {
         editor: [
           this.initHidden,
+          this.findEditorRoot,
           this.findEditorElements,
-          this.bindEditorEvents
+          this.bindEditorEvents,
+          this.initEditor
         ],
         alert: [
           this.bindAlertEvents
         ],
         searchResultsLinks: [
           this.bindSearchResultsLinksEvents
+        ],
+        urlPreview: [
+          this.initHidden,
+          this.findUrlPreviewElements,
+          this.bindUrlPreviewEvents
+        ],
+        progressIndicator: [
+          this.findProgressIndicatorElements
         ]
       };
     },
 
+    findProgressIndicatorElements: function(container) {
+      this.e.progressIndicator = container.find('.progress-indicator');
+    },
+
     showProgressIndicator: function() {
-      this.e.progressIndicator.show();
+      if (!this.e.progressIndicator) {
+        this.renderTemplate('progressIndicator', {}, $('body'));
+      }
+      else {
+        this.e.progressIndicator.show();
+      }
       this.state.inProgress = true;
 
       this.state.lockedControls = this.e.editor.find('button');
@@ -166,10 +186,12 @@
         .removeClass('hidden');
     },
 
-    findEditorElements: function(container) {
+    findEditorRoot: function(container) {
       // Editor itself.
       this.e.editor = container.find('.contextly-editor');
+    },
 
+    findEditorElements: function(container) {
       // Search controls.
       this.e.searchInput = this.e.editor.find('.search-phrase');
       this.e.searchSubmit = this.e.editor.find('.search-submit');
@@ -186,18 +208,6 @@
       this.e.searchPager = container.find('.search-pager');
       this.e.searchNext = this.e.searchPager.find('.search-next');
       this.e.searchPrev = this.e.searchPager.find('.search-prev');
-
-      // Progress indicator.
-      this.e.progressIndicator = container.find('.progress-indicator');
-
-      // Inline URL preview.
-      this.e.urlPreview = container.find('.url-preview-overlay');
-      this.e.urlPreviewFrame = this.e.urlPreview.find('.url-preview-frame');
-      this.e.urlPreviewLink = this.e.urlPreview.find('.url-preview-link');
-      var urlPreviewButtons = this.e.urlPreview.find('.url-preview-buttons');
-      this.e.urlPreviewRemove = urlPreviewButtons.find('.url-preview-remove');
-      this.e.urlPreviewCancel = urlPreviewButtons.find('.url-preview-cancel');
-      this.e.urlPreviewConfirm = urlPreviewButtons.find('.url-preview-confirm');
     },
 
     bindEditorEvents: function() {
@@ -216,10 +226,10 @@
       // Pager events.
       this.onClick(this.e.searchNext, this.onSearchNext);
       this.onClick(this.e.searchPrev, this.onSearchPrev);
+    },
 
-      // Inline URL preview.
-      this.onClick(this.e.urlPreviewLink, this.onLinkNewTabPreview, true);
-      this.onClick(this.e.urlPreviewCancel, this.closeUrlPreview);
+    initEditor: function() {
+      this.refreshSearchTabs();
     },
 
     bindAlertEvents: function(container, elements) {
@@ -232,6 +242,27 @@
       var testLink = container.find('.website-link');
       this.onClick(addButton, this.onSearchResultAdd, true);
       this.onClick(testLink, this.onSearchResultPreview, true);
+    },
+
+    /**
+     * Binds any passed event to the element.
+     *
+     * The function is still fired even when the progress indicator is
+     * displayed.
+     *
+     * @param event
+     *   Event type to handle.
+     * @param element
+     * @param func
+     *   Function that will be called with "this" as a context.
+     * @param [passArguments]
+     *   Pass TRUE to call func with arguments of original callback prepended
+     *   with the context of original function.
+     */
+    on: function(event, element, func, passArguments) {
+      // Wrap callback with proxy.
+      func = this.proxy(func, passArguments, passArguments);
+      element.bind(event, func);
     },
 
     /**
@@ -367,7 +398,7 @@
       var searchInfo = this.getTabSearchInfo(this.getActiveSearchTab());
       var cache = this.state.searchResults;
       var cacheKey = searchInfo.toStr();
-      if (this.state.searchQuery && cache[cacheKey] && cache[cacheKey].nextPage) {
+      if (this.isSearchQuerySet(searchInfo) && cache[cacheKey] && cache[cacheKey].nextPage) {
         var nextPage = parseInt(cache[cacheKey].page) + 1;
         this.performSearchQuery(searchInfo, this.state.searchQuery, nextPage);
       }
@@ -379,7 +410,7 @@
       var searchInfo = this.getTabSearchInfo(this.getActiveSearchTab());
       var cache = this.state.searchResults;
       var cacheKey = searchInfo.toStr();
-      if (this.state.searchQuery && cache[cacheKey]) {
+      if (this.isSearchQuerySet(searchInfo) && cache[cacheKey]) {
         var currentPage = parseInt(cache[cacheKey].page);
         if (currentPage > 1) {
           this.performSearchQuery(searchInfo, this.state.searchQuery, currentPage - 1);
@@ -389,35 +420,59 @@
       return false;
     },
 
+    trim: function(str) {
+      if (!str) {
+        return '';
+      }
+
+      return str
+        .replace(/^\s+/, '')
+        .replace(/\s+$/, '');
+    },
+
     onSearchSubmit: function () {
-      var query = this.e.searchInput.val();
-      if (!query) {
-        // No search terms. Do nothing.
+      var query = this.trim(this.e.searchInput.val());
+      var searchInfo = this.getTabSearchInfo(this.getActiveSearchTab());
+      if (!query && !this.searchTypes[searchInfo.type].emptyQuery) {
+        // No search terms and search type doesn't support empty query.
+        // Do nothing.
         // TODO Mark input with error class and display error message.
         return;
       }
 
-      var searchInfo = this.getTabSearchInfo(this.getActiveSearchTab());
       this.performSearchQuery(searchInfo, query, 1);
     },
 
-    onSearchTabSwitch: function (target) {
-      var tab = $(target).closest('.search-tab');
+    onSearchTabSwitch: function (target, e) {
+      e.preventDefault();
 
-      if (!tab.is('.active') && this.state.searchQuery) {
-        var searchInfo = this.getTabSearchInfo(tab);
-        var cacheKey = searchInfo.toStr();
-        if (this.state.searchResults[cacheKey]) {
-          // Get results from cache and display immediately.
-          this.displaySearchResults(searchInfo, this.state.searchResults[cacheKey]);
-        }
-        else {
-          // No cache entry, perform search query.
-          this.performSearchQuery(searchInfo, this.state.searchQuery, 1);
-        }
+      var tab = $(target).closest('.search-tab');
+      if (tab.is('.active')) {
+        return;
       }
 
-      return false;
+      var searchInfo = this.getTabSearchInfo(tab);
+      if (!this.isSearchQuerySet(searchInfo)) {
+        return;
+      }
+
+      var cacheKey = searchInfo.toStr();
+      if (this.state.searchResults[cacheKey]) {
+        // Get results from cache and display immediately.
+        this.displaySearchResults(searchInfo, this.state.searchResults[cacheKey]);
+      }
+      else {
+        // No cache entry, perform search query.
+        this.performSearchQuery(searchInfo, this.state.searchQuery, 1);
+      }
+    },
+
+    isSearchQuerySet: function(searchInfo) {
+      if (this.state.searchQuery) {
+        return true;
+      }
+
+      return this.searchTypes[searchInfo.type].emptyQuery;
     },
 
     performSearchQuery: function(searchInfo, query, page) {
@@ -499,7 +554,7 @@
     },
 
     displaySearchResults: function (searchInfo, result) {
-      this.e.searchTabs.show();
+      this.refreshSearchTabs();
       this.activateTab(searchInfo);
 
       // Put rendered content to the page and attach event handlers.
@@ -547,6 +602,30 @@
       }
     },
 
+    refreshSearchTabs: function() {
+      var tabs = this.e.searchTabs.find('.search-tab');
+
+      if (this.state.searchQuery) {
+        this.e.searchTabs.show();
+        tabs.show();
+      }
+      else {
+        var visible = false;
+        this.each(this.searchTypes, function(specs, key) {
+          var typeTabs = tabs.filter('[data-search-type="' + this.escapeSizzleAttrValue(key) + '"]');
+
+          if (specs.emptyQuery) {
+            typeTabs.show();
+            visible = true;
+          }
+          else {
+            typeTabs.hide();
+          }
+        });
+        this.e.searchTabs.toggle(visible);
+      }
+    },
+
     checkSearchType: function(searchInfo) {
       if (!this.searchTypes[searchInfo.type]) {
         $.error('Unknown search type "' + searchInfo.type + '" passed.');
@@ -580,7 +659,7 @@
     },
 
     onUrlSubmit: function () {
-      var url = this.e.urlInput.val();
+      var url = this.trim(this.e.urlInput.val());
       if (url) {
         this.performUrlInfoRequest(url);
       }
@@ -629,15 +708,10 @@
     onSearchResultPreview: function(target, e) {
       e.preventDefault();
 
-      // Set up buttons state and attach event handlers.
-      this.e.urlPreviewRemove.hide();
-      this.e.urlPreviewConfirm
-        .unbind('click')
-        .show();
-      this.onClick(this.e.urlPreviewConfirm, this.onSearchResultPreviewConfirm);
-
       // Show the preview.
-      this.previewUrl($(target).attr('href'));
+      this.showUrlPreview($(target).attr('href'), {
+        confirm: this.onSearchResultPreviewConfirm
+      });
     },
 
     onSearchResultPreviewConfirm: function() {
@@ -648,7 +722,49 @@
       this.performUrlInfoRequest(url);
     },
 
-    previewUrl: function(url) {
+    findUrlPreviewElements: function(container) {
+      this.e.urlPreview = container.find('.url-preview-overlay');
+      this.e.urlPreviewFrame = this.e.urlPreview.find('.url-preview-frame');
+      this.e.urlPreviewLink = this.e.urlPreview.find('.url-preview-link');
+
+      var buttons = this.e.urlPreview.find('.url-preview-buttons');
+      this.e.urlPreviewButtons = {
+        remove: buttons.find('.url-preview-remove'),
+        cancel: buttons.find('.url-preview-cancel'),
+        confirm: buttons.find('.url-preview-confirm')
+      };
+    },
+
+    bindUrlPreviewEvents: function() {
+      this.onClick(this.e.urlPreviewLink, this.onLinkNewTabPreview, true);
+    },
+
+    showUrlPreview: function(url, params) {
+      params = $.extend({
+        remove: false,
+        confirm: false,
+        cancel: this.closeUrlPreview
+      }, params);
+
+      // Render template if not already done.
+      if (!this.e.urlPreview) {
+        this.renderTemplate('urlPreview', {}, $('body'));
+      }
+
+      // Show/hide buttons and bind click handlers.
+      for (var kind in this.e.urlPreviewButtons) {
+        var button = this.e.urlPreviewButtons[kind];
+        if ($.isFunction(params[kind])) {
+          button
+            .show()
+            .unbind('click');
+          this.onClick(button, params[kind]);
+        }
+        else {
+          button.hide();
+        }
+      }
+
       // Save url for future use.
       this.state.previewUrl = url;
 
@@ -828,6 +944,16 @@
         // Fallback to the first position.
         return 1;
       }
+    },
+
+    /**
+     * Translates the passed string.
+     *
+     * @param str
+     */
+    t: function(str) {
+      // TODO Implement UI translations.
+      return str;
     }
 
   });

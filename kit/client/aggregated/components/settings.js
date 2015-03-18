@@ -1,11 +1,4 @@
 /**
- * Just a placeholder for an actual object provided by CMS.
- *
- * @type {Contextly.BaseSettings}
- */
-Contextly.Settings;
-
-/**
  * Abstract class that should be extended by the CMS integration.
  *
  * CMS integration should provide actual settings through abstract methods.
@@ -17,56 +10,54 @@ Contextly.BaseSettings = Contextly.createClass({
   statics: {
 
     /**
-     * Returns API server URL.
-     *
-     * @function
-     */
-    getAPIServerUrl: Contextly.abstractMethod(),
-
-    /**
      * Returns main Contextly server URL.
      *
      * @function
      */
-    getMainServerUrl: Contextly.abstractMethod(),
+    getMainServerUrl: function () {
+        if ( this.getMode() == 'dev' ) {
+            return "http" + ( this.isHttps() ? 's' : '' ) + "://dev.contextly.com/";
+        } else {
+            return "http" + ( this.isHttps() ? 's' : '' ) + "://contextly.com/";
+        }
+    },
 
     /**
-     * Returns WP plug-in version.
+     * Returns API server URL.
      *
-     * @todo Replace with Kit version and drop it.
-     *
      * @function
      */
-    getPluginVersion: Contextly.abstractMethod(),
-
-    /**
-     * @function
-     */
-    getAppId: Contextly.abstractMethod(),
-
-    /**
-     * @function
-     */
-    isAdmin: Contextly.abstractMethod(),
+    getAPIServerUrl: function () {
+        if ( this.getMode() == 'dev' ) {
+            return "http" + ( this.isHttps() ? 's' : '' ) + "://devrest.contextly.com/";
+        } else {
+            return "http" + ( this.isHttps() ? 's' : '' ) + "://rest.contextly.com/";
+        }
+    },
 
     /**
      * Returns parsed post data object.
      *
      * @function
      */
-    getPostData: Contextly.abstractMethod(),
+    getPostData: function () {
+        var data = jQuery("meta[name='contextly-page']").attr("content");
 
-    /**
-     * Returns true on HTTPS protocol.
-     */
-    isHttps: Contextly.abstractMethod(),
+        if ( data ) {
+            return jQuery.parseJSON(data);
+        }
+
+        return null;
+    },
 
     /**
      * Returns visitor tracking cookie.
      *
      * @function
      */
-    getCookieId: Contextly.abstractMethod(),
+    getCookieId: function() {
+        return Contextly.Loader.getCookieId();
+    },
 
     /**
      * Returns URL of the snippet CSS.
@@ -82,26 +73,30 @@ Contextly.BaseSettings = Contextly.createClass({
       return this.getCdnCssUrl() + "wp_plugin/" + this.getPluginVersion() + "/css-api/sidebar/template-" + settings.theme + ".css";
     },
 
-    getPostDataForKey: function(key)
-    {
+    getPostDataForKey: function(key) {
         var data = this.getPostData();
-        if ( data !== null && data[key])
-        {
+        if ( data !== null && data[key]) {
             return data[key];
         }
 
         return null;
     },
 
-    getPostDataForKeyCount: function(key)
-    {
+    getPostDataForKeyCount: function(key) {
         var data = this.getPostDataForKey(key);
 
-        if ( data !== null )
-        {
+        if ( data !== null ) {
             return data.length;
         }
         return 0;
+    },
+
+    getPluginVersion: function () {
+        return this.getPostDataForKey('version');
+    },
+
+    getAppId: function () {
+        return this.getPostDataForKey('app_id');
     },
 
     getPageId: function() {
@@ -154,10 +149,41 @@ Contextly.BaseSettings = Contextly.createClass({
       }
     },
 
+    isAdmin: function () {
+      return false;
+    },
+
     isBrandingDisplayed: function() {
       return true;
+    },
+
+    isReadyToLoad: function() {
+      return true;
+    },
+
+    isHttps: function () {
+      var https = this.getPostDataForKey('https');
+      return  https != null;
+    },
+
+    getMode: function () {
+      var mode = this.getPostDataForKey('mode');
+
+      if ( mode != null ) {
+          return mode;
+      }
+      return 'live';
     }
 
   }
 
 });
+
+/**
+ * Default settings object, that can be overriden in any CMS
+ */
+Contextly.Settings = Contextly.createClass({
+   extend: Contextly.BaseSettings
+
+});
+

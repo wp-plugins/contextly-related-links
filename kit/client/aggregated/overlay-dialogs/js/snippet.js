@@ -13,6 +13,11 @@
     getTemplateHandlers: function() {
       var handlers = Contextly.overlayDialog.BaseWidget.prototype.getTemplateHandlers.apply(this, arguments);
 
+      handlers.editor = handlers.editor || [];
+      handlers.editor.push(
+        this.refreshDialogActions
+      );
+
       handlers.section = handlers.section || [];
       handlers.section.push(
         this.initSection

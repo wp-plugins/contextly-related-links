@@ -1257,8 +1257,8 @@ body.contextly-overlay, body.contextly-overlay input, body.contextly-overlay lab
 .url-preview-link {float: left;line-height: 22px;}
 .url-preview-buttons {text-align: right;}
 .search-tab.right {float: right;}
-.search-results {display: block;padding: 0;margin: 0;}
-.search-result {display: table;padding: 0;margin: 0;width: 100%;border-bottom: 1px dashed #ddd;}
+.search-results {display: table;padding: 0;margin: 0;width: 100%;border-collapse: collapse;}
+.search-result {display: table-row;padding: 0;margin: 0;border-bottom: 1px dashed #ddd;}
 .search-result .cell {display: table-cell;padding: 5px;}
 .search-result-action-wrapper {width: 1%;white-space: nowrap;vertical-align: middle;}
 .search-result-title {font-weight: bold;font-size: 14px;margin-top: 0;margin-bottom: 5px;}
@@ -1269,6 +1269,7 @@ body.contextly-overlay, body.contextly-overlay input, body.contextly-overlay lab
 .search-sidebar-link:hover .search-sidebar-link-title {text-decoration: underline;}
 .search-sidebar-content {margin: 0;list-style-type: none;display: block;}
 .btn.search-sidebar-add-single {vertical-align: baseline;}
+.search-no-results {padding: 20px;text-align: center;font-size: 14px;}
 .widget-title {margin: 0 0 10px 0;font-size: 18px;font-weight: bold;line-height: normal;}
 .section-title {line-height: normal;font-size: 16px;font-weight: bold;}
 .section-links {display: block;margin: 0;padding: 0;}
@@ -1287,3 +1288,7 @@ body.contextly-overlay, body.contextly-overlay input, body.contextly-overlay lab
 .sidebar-description {width: 95%;resize: vertical;min-height: 40px;}
 .sidebar-result {margin-top: 10px;}
 .sidebar-add-to-related-wrapper {margin-top: 20px;}
+.sidebar-chooser .search-results {min-width: 700px;max-width: 900px;width: 70%;margin-left: auto;margin-right: auto;}
+.sidebar-pane-types {margin-bottom: 0;padding: 0 10px 3px 10px;border-bottom: 1px solid #ddd;text-align: center;}
+.nav-pills > li.sidebar-pane-type {float: none;display: inline-block;vertical-align: middle;}
+.sidebar-pane-container {padding-top: 20px;}
