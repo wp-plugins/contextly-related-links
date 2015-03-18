@@ -9,7 +9,7 @@ Contextly.widget.CssCustomBuilder = Contextly.createClass({
       if (!value) {
         return "";
       }
-      return entry + " " + prefix + " {" + property + ": " + Contextly.widget.Utils.escape(value) + "}";
+      return entry + " " + prefix + " {" + property + ": " + Contextly.Utils.escape(value) + "}";
     },
 
     hex2Vals: function(hex) {

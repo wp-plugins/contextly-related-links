@@ -2,11 +2,11 @@
 
   /**
    * @class
-   * @extends Contextly.widget.Base
+   * @extends Contextly.widget.BaseLinksList
    */
   Contextly.widget.Sidebar = Contextly.createClass( /** @lends Contextly.widget.Sidebar.prototype */ {
 
-    extend: Contextly.widget.Base,
+    extend: Contextly.widget.BaseLinksList,
 
     construct: function(widget) {
       if (widget) {
@@ -56,7 +56,7 @@
       }
 
       if (this.widget.settings.display_link_dates && link.publish_date) {
-        html += " <span class='link-pub-date'>" + Contextly.widget.Utils.dateTextDiff(link.publish_date) + "</span>";
+        html += " <span class='link-pub-date'>" + Contextly.Utils.dateTextDiff(link.publish_date) + "</span>";
       }
 
       html += "</div>";
@@ -81,12 +81,7 @@
     },
 
     display: function() {
-      if ( this.hasWidgetData() && !Contextly.Settings.isAdmin() ) {
-        this.show();
-      }
-    },
-
-    show: function () {
+      if ( this.hasWidgetData() ) {
         // Build widget html and display it
         var html = this.getWidgetHTML();
         this.displayHTML(html);
@@ -111,6 +106,8 @@
 
         this.loadCss('sidebar-css');
         this.setResponsiveFunction();
+        this.broadcastWidgetDisplayed();
+      }
     },
 
     getWidgetCSSUrl: function() {

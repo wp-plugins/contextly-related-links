@@ -1,20 +1,18 @@
 {
-  "aggregate": true,
   "include": [
     "components/settings",
     "components/proxy",
     "components/api-client",
     "components/main-server-client",
-    "components/cookie",
-    "components/view",
-    "components/events",
-    "components/loader"
+    "components/utils",
+    "components/overlay-base"
   ],
 
   "base": "widgets",
   "js": [
     "js/base-widget",
     "js/base-css",
+    "js/base-links-list-widget",
     "js/text-widget",
     "js/text-css",
     "js/blocks-widget",
@@ -25,13 +23,17 @@
     "js/float-css",
     "js/sidebar-widget",
     "js/sidebar-css",
+    "js/storyline-widget",
+    "js/storyline-overlay",
+    "js/branding-overlay",
     "js/page-events",
-    "js/utils",
     "js/factory"
   ],
   "css": [
+    "css/common",
     "css/video",
-    "css/branding"
+    "css/branding",
+    "css/storyline"
   ],
   "media": [
     "img"

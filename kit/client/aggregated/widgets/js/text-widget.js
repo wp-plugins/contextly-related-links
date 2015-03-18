@@ -2,11 +2,11 @@
 
   /**
    * @class
-   * @extends Contextly.widget.Base
+   * @extends Contextly.widget.BaseLinksList
    */
   Contextly.widget.TextSnippet = Contextly.createClass( /** @lends Contextly.widget.TextSnippet.prototype */ {
 
-    extend: Contextly.widget.Base,
+    extend: Contextly.widget.BaseLinksList,
 
     getWidgetStyleClass: function() {
       return 'ctx-content-text';
@@ -48,9 +48,7 @@
       div += "</div>";
 
       if (this.isDisplayContextlyLogo()) {
-        div += "<div class='ctx-branding ctx-clearfix'>";
-        div += "<a href='#' id='ctx-branding-link' class='ctx-nodefs'>Powered by</a>";
-        div += "</div>";
+        div += this.getBrandingButtonHtml();
       }
 
       return div;

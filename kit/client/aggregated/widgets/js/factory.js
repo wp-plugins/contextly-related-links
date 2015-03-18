@@ -20,6 +20,9 @@ Contextly.widget.Factory = Contextly.createClass({
         case Contextly.widget.types.AUTO_SIDEBAR:
           return new Contextly.widget.Sidebar(widget);
 
+        case Contextly.widget.types.STORYLINE_SUBSCRIBE:
+          return new Contextly.widget.StoryLineSubscribe(widget);
+
         default:
           // Snippet.
           switch (widget.settings.display_type) {

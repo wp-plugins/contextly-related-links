@@ -12,7 +12,7 @@ Contextly.widget.BlocksCssCustomBuilder = Contextly.createClass({
       var css_code = "";
 
       if (settings.css_code) {
-        css_code += Contextly.widget.Utils.escape(settings.css_code);
+        css_code += Contextly.Utils.escape(settings.css_code);
       }
 
       if (settings.font_family) {

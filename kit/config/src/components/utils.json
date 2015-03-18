@@ -1,0 +1,11 @@
+{
+  "include": [
+    "libraries/jquery",
+    "components/create-class"
+  ],
+
+  "base": "components",
+  "js": [
+    "utils"
+  ]
+}

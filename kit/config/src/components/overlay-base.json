@@ -1,0 +1,15 @@
+{
+  "include": [
+    "libraries/jquery",
+    "components/create-class",
+    "components/proxy"
+  ],
+
+  "base": "components/overlay/base",
+  "js": [
+    "base"
+  ],
+  "css": [
+    "base"
+  ]
+}

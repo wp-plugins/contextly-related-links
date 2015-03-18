@@ -1,6 +1,7 @@
 {
     "include": [
-        "components/create-class"
+      "libraries/jquery",
+      "components/create-class"
     ],
 
     "base": "components",

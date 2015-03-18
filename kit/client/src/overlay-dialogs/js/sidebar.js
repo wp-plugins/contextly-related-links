@@ -266,7 +266,6 @@
       // Results wrapper.
       this.e.sidebarResult = this.e.sidebar.find('.sidebar-result');
       this.e.sectionLinks = this.e.sidebarResult.find('.section-links');
-      this.e.sidebarAddToRelated = this.e.sidebarResult.find('.sidebar-add-to-related');
     },
 
     bindContentEditorEvents: function() {
@@ -648,8 +647,7 @@
     saveSidebar: function(data) {
       data = $.extend({
         remove_links: [],
-        save_links: [],
-        related_links: []
+        save_links: []
       }, data);
 
       // Set the rest sidebar data.
@@ -668,39 +666,16 @@
         });
       }
 
-      var addToRelated = this.e.sidebarAddToRelated.is(':checked');
-      if (addToRelated && this.settings.snippet.id) {
-        data.snippet_id = this.settings.snippet.id;
-      }
-
       // Build the list of links to insert/update/add to snippet.
-      var sidebarPos = 1;
-      var snippetPos = {};
+      var linkPos = 1;
       this.eachElement(this.e.sectionLinks.find('.section-link'), function (link) {
         var linkData = this.extractSectionLinkData({
           type: 'previous',
-          pos: sidebarPos++
+          pos: linkPos++
         }, link);
 
         // Save it to sidebar.
         data.save_links.push(linkData);
-
-        // Save copy to the snippet if asked.
-        if (addToRelated) {
-          var sectionName = this.chooseUrlSection(linkData.url);
-          if (!this.snippetLinkExists(sectionName, linkData.url)) {
-            if (!snippetPos[sectionName]) {
-              snippetPos[sectionName] = this.getSnippetLinkNextPos(sectionName);
-            }
-
-            var snippetLinkData = $.extend(true, {}, linkData, {
-              type: sectionName,
-              pos: snippetPos[sectionName]++
-            });
-            delete snippetLinkData.id;
-            data.related_links.push(snippetLinkData);
-          }
-        }
       });
 
       // Perform the request.
@@ -720,12 +695,7 @@
         this.api.callback(data.sidebar);
       }
 
-      // Update sidebar and the snippet if necessary.
       this.api.setSidebar(data.sidebar);
-      if (data.snippet) {
-        this.api.setSnippet(data.snippet);
-      }
-
       this.api.closeOverlay();
     },
 

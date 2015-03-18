@@ -250,7 +250,6 @@ class ContextlyKitWidgetsEditor extends ContextlyKitBase {
       'name' => '',
       'description' => '',
     );
-    $addToRelated = !empty($params['related_links']);
 
     // First, update/insert the sidebar itself.
     $sidebar = array(
@@ -263,19 +262,6 @@ class ContextlyKitWidgetsEditor extends ContextlyKitBase {
     $sidebarType = $params['type'];
     $sidebarId = $this->putSidebar($sidebar, $sidebarType);
 
-    // If we're going to add links to the snippet too, get its ID if not passed.
-    $snippetId = NULL;
-    if ($addToRelated) {
-      if (!isset($params['snippet_id'])) {
-        $snippetId = $this->putSnippet(array(
-          'custom_id' => $params['custom_id'],
-        ));
-      }
-      else {
-        $snippetId = $params['snippet_id'];
-      }
-    }
-
     // Remove links.
     if (!empty($params['remove_links'])) {
       $this->queueWidgetLinksRemoval($sidebarId, $params['remove_links']);
@@ -286,12 +272,6 @@ class ContextlyKitWidgetsEditor extends ContextlyKitBase {
       $this->queueWidgetLinksSaving($sidebarId, $params['save_links']);
     }
 
-    // Add links to the snippet and reload it if asked.
-    if ($addToRelated) {
-      $this->queueWidgetLinksSaving($snippetId, $params['related_links']);
-      $this->queueSnippetLoading($snippetId);
-    }
-
     // Load full updated sidebar.
     $this->queueSidebarLoading($sidebarId, $sidebarType);
 
@@ -300,11 +280,6 @@ class ContextlyKitWidgetsEditor extends ContextlyKitBase {
     $output = array(
       'sidebar' => array_pop($results),
     );
-    if ($addToRelated) {
-      $output += array(
-        'snippet' => array_pop($results),
-      );
-    }
 
     return $output;
   }
@@ -441,10 +416,8 @@ class ContextlyKitWidgetsEditor extends ContextlyKitBase {
           'name' => FALSE,
           'description' => FALSE,
           'layout' => TRUE,
-          'snippet_id' => FALSE,
           'save_links' => FALSE,
           'remove_links' => FALSE,
-          'related_links' => FALSE,
         ),
       ),
       'remove-sidebar' => array(

@@ -1,0 +1,7 @@
+.ctx-clearfix:before, .ctx-clearfix:after {
+  content: "";
+  display: table;
+}
+.ctx-clearfix:after {
+  clear: both;
+}

@@ -12,7 +12,7 @@ Contextly.widget.SidebarCssCustomBuilder = Contextly.createClass({
       var css_code = "";
 
       if (settings.css_code) {
-        var site_custom_code = Contextly.widget.Utils.escape(settings.css_code);
+        var site_custom_code = Contextly.Utils.escape(settings.css_code);
         if (site_custom_code.indexOf(entry) == -1) {
           site_custom_code += entry + site_custom_code;
         }

@@ -1,4 +1,4 @@
-/* For licensing information see http://contextlysiteimages.contextly.com/_kit/assets/dev/licenses.txt */.clearfix {}
+/* For licensing information see http://contextlysitescripts.contextly.com/kit/assets/dev/licenses.txt */.clearfix {}
 .clearfix:before, .clearfix:after {display: table;content: "";line-height: 0;}
 .clearfix:after {clear: both;}
 .hide-text {font: 0/0 a;color: transparent;text-shadow: none;background-color: transparent;border: 0;}
@@ -1287,7 +1287,6 @@ body.contextly-overlay, body.contextly-overlay input, body.contextly-overlay lab
 .sidebar-title {width: 95%;}
 .sidebar-description {width: 95%;resize: vertical;min-height: 40px;}
 .sidebar-result {margin-top: 10px;}
-.sidebar-add-to-related-wrapper {margin-top: 20px;}
 .sidebar-chooser .search-results {min-width: 700px;max-width: 900px;width: 70%;margin-left: auto;margin-right: auto;}
 .sidebar-pane-types {margin-bottom: 0;padding: 0 10px 3px 10px;border-bottom: 1px solid #ddd;text-align: center;}
 .nav-pills > li.sidebar-pane-type {float: none;display: inline-block;vertical-align: middle;}

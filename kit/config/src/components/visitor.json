@@ -1,0 +1,11 @@
+{
+  "include": [
+    "components/create-class",
+    "components/cookie"
+  ],
+
+  "base": "components",
+  "js": [
+    "visitor"
+  ]
+}

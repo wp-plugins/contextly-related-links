@@ -1,8 +1,4 @@
 /**
- * Abstract class that should be extended by the CMS integration.
- *
- * CMS integration should provide actual settings through abstract methods.
- *
  * @class
  */
 Contextly.BaseSettings = Contextly.createClass({
@@ -39,24 +35,29 @@ Contextly.BaseSettings = Contextly.createClass({
      * Returns parsed post data object.
      *
      * @function
+     * @return {Contextly.metadataParser.Base}
      */
-    getPostData: function () {
-        var data = jQuery("meta[name='contextly-page']").attr("content");
+    getMetadataParser: function () {
+      if (typeof this.metadataParser === 'undefined') {
+        // Use our own format by default, it's also a fallback if no other
+        // sources found.
+        this.metadataParser = Contextly.metadataParser.Default;
 
-        if ( data ) {
-            return jQuery.parseJSON(data);
+        if (!this.metadataParser.dataExists()) {
+          for (var key in Contextly.metadataParser) {
+            if (key === 'Base' || key === 'Default') {
+              continue;
+            }
+
+            if (Contextly.metadataParser[key].dataExists()) {
+              this.metadataParser = Contextly.metadataParser[key];
+              break;
+            }
+          }
         }
+      }
 
-        return null;
-    },
-
-    /**
-     * Returns visitor tracking cookie.
-     *
-     * @function
-     */
-    getCookieId: function() {
-        return Contextly.Loader.getCookieId();
+      return this.metadataParser;
     },
 
     /**
@@ -74,25 +75,21 @@ Contextly.BaseSettings = Contextly.createClass({
     },
 
     getPostDataForKey: function(key) {
-        var data = this.getPostData();
-        if ( data !== null && data[key]) {
-            return data[key];
-        }
-
-        return null;
+        return this.getMetadataParser()
+          .getData(key);
     },
 
     getPostDataForKeyCount: function(key) {
-        var data = this.getPostDataForKey(key);
-
-        if ( data !== null ) {
-            return data.length;
-        }
-        return 0;
+        return this.getMetadataParser()
+          .getCount(key);
     },
 
     getPluginVersion: function () {
-        return this.getPostDataForKey('version');
+      var version = this.getPostDataForKey('version');
+      if (version == null) {
+        version = '1.4';
+      }
+      return version;
     },
 
     getAppId: function () {
@@ -157,13 +154,8 @@ Contextly.BaseSettings = Contextly.createClass({
       return true;
     },
 
-    isReadyToLoad: function() {
-      return true;
-    },
-
     isHttps: function () {
-      var https = this.getPostDataForKey('https');
-      return  https != null;
+      return document.location.protocol === 'https:';
     },
 
     getMode: function () {
@@ -180,10 +172,6 @@ Contextly.BaseSettings = Contextly.createClass({
 });
 
 /**
- * Default settings object, that can be overriden in any CMS
+ * Default settings object, that can be overridden in any CMS.
  */
-Contextly.Settings = Contextly.createClass({
-   extend: Contextly.BaseSettings
-
-});
-
+Contextly.Settings = Contextly.BaseSettings;

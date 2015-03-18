@@ -1,0 +1,16 @@
+{
+  "aggregate": true,
+  "include": [
+    "components/create-class",
+    "components/proxy",
+    "components/events",
+    "components/api-client",
+    "components/visitor",
+    "widgets/factory"
+  ],
+
+  "base": "widgets",
+  "js": [
+    "js/page-view"
+  ]
+}

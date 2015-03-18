@@ -1,0 +1,14 @@
+{
+  "include": [
+    "libraries/jquery",
+    "components/create-class",
+    "components/utils"
+  ],
+
+  "base": "components/metadata-parser",
+  "js": [
+    "base",
+    "default",
+    "parsely-page"
+  ]
+}

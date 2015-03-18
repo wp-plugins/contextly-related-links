@@ -12,7 +12,7 @@ Contextly.widget.TextCssCustomBuilder = Contextly.createClass({
       var css_code = "";
 
       if (settings.css_code) {
-        css_code += Contextly.widget.Utils.escape(settings.css_code);
+        css_code += Contextly.Utils.escape(settings.css_code);
       }
       if (settings.font_family) {
         css_code += this.buildCSSRule(entry, ".ctx-content-text .ctx-links-content a", "font-family", settings.font_family);

@@ -5,7 +5,7 @@
  */
 class ContextlyKitApi extends ContextlyKitBase {
 
-  const API_VERSION = '1.3.6';
+  const API_VERSION = '1.4.2';
 
   const HEADER_TOKEN = 'Contextly-Access-Token';
   const HEADER_APP_ID = 'Contextly-App-ID';
@@ -26,6 +26,13 @@ class ContextlyKitApi extends ContextlyKitBase {
    * @var ContextlyKitApiRequest|null
    */
   protected $currentRequest = NULL;
+
+  /**
+   * Current or last response in json format.
+   *
+   * @var null
+   */
+  protected $currentResponse = NULL;
 
   /**
    * @var ContextlyKitApiSessionInterface
@@ -231,6 +238,8 @@ class ContextlyKitApi extends ContextlyKitBase {
       throw $this->kit->newApiException("Unable to decode JSON response from server.", $request, $response);
     }
 
+	$this->currentResponse = $result;
+
     // Check required properties on the result.
     $this->checkRequiredProperties($request, $response, $result);
 
@@ -279,6 +288,7 @@ class ContextlyKitApi extends ContextlyKitBase {
     $request->addRequiredProperty('success');
 
     $result = $this->call($request);
+
     if (empty($result->success)) {
       throw $this->kit->newException('Unable to get access token with passed app ID and secret.');
     }
@@ -320,6 +330,13 @@ class ContextlyKitApi extends ContextlyKitBase {
   public function getAccessToken() {
     $this->authorize();
     return $this->session->getToken();
+  }
+
+  /**
+   * @return null
+   */
+  public function getCurrentResponse() {
+    return $this->currentResponse;
   }
 
 }
