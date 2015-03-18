@@ -112,6 +112,12 @@ If you just want to choose some items, copy and paste your main RSS feed into th
 
 == Changelog ==
 
+= 1.4.2 =
+
+- Minor bug fixes
+- Enables FollowUp button
+
+
 = 1.4 =
 
 - Removed unneeded cross-site communication file from plugin
