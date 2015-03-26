@@ -177,7 +177,7 @@ class ContextlyKit {
     return array(
       'cdn' => array(
         'http' => 'http://contextlysitescripts.contextly.com/',
-        'https' => 'https://c713421.ssl.cf2.rackcdn.com/',
+        'https' => 'https://c714015.ssl.cf2.rackcdn.com/',
       ),
       'main' => array(
         'dev' => 'http://dev.contextly.com/',
