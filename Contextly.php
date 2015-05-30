@@ -27,6 +27,10 @@ class Contextly
 	const MAIN_MODULE_SHORT_CODE_CLASS = 'ctx_widget_hidden';
 	const MAIN_MODULE_SHORT_CODE_ID = 'ctx_main_module_short_code';
 
+	const SL_MODULE_SHORT_CODE = 'contextly_sl_button';
+	const SL_MODULE_SHORT_CODE_CLASS = 'ctx_widget_hidden';
+	const SL_MODULE_SHORT_CODE_ID = 'ctx_sl_button_short_code';
+
 	/**
 	 * @var ContextlyKitApi
 	 */
@@ -201,6 +205,7 @@ class Contextly
         add_shortcode(self::MAIN_MODULE_SHORT_CODE, array( $this, 'prepareMainModule' ) );
         add_shortcode('contextly_sidebar', array( $this, 'prepareSidebar' ) );
         add_shortcode('contextly_auto_sidebar', array( $this, 'prepareAutoSidebar' ) );
+        add_shortcode(self::SL_MODULE_SHORT_CODE, array( $this, 'prepareSLButtonShortCode' ) );
     }
 
     private function addEditorButtons() {
@@ -633,25 +638,33 @@ class Contextly
 
 			if ( count( $post_images ) > 0 ) {
 				$sorted_images = array();
-				$check_images_count = 1;
+				$check_images_count = 6;
 
 				foreach ( $post_images as $image ) {
-					list($url, $width, $height) = wp_get_attachment_image_src( $image->ID, 'full' );
+					// Check if image url, this is NOT URL to another server. If this is external URL, this can take a lot of time to detect image size
+					if ( strpos( $image->guid, site_url() ) !== false ) {
+						list($url, $width, $height) = wp_get_attachment_image_src($image->ID, 'full');
+						$image_rank = $width + $height;
 
-					$image_rank = $width + $height;
+						if (!isset($sorted_images[$image_rank])) {
+							$sorted_images[$image_rank] = array($url);
+						} else {
+							$sorted_images[$image_rank][] = $url;
+						}
 
-					if ( !isset( $sorted_images[$image_rank] ) ) {
-						$sorted_images[$image_rank] = array($url);
-					} else {
-						$sorted_images[$image_rank][] = $url;
+						if (count($sorted_images) >= $check_images_count) break;
 					}
+				}
 
-					if ( count( $sorted_images ) >= $check_images_count ) {
-						break;
+				if ( count( $sorted_images ) == 0 ) {
+					$first_image = reset( $post_images );
+					if ( $first_image && isset( $first_image->guid ) ) {
+						$sorted_images[0][] = $first_image->guid;
 					}
 				}
 
 				krsort( $sorted_images );
+
 				return current(reset($sorted_images));
 			}
 		}
@@ -773,17 +786,22 @@ class Contextly
 	}
 
 	/**
+	 * @return string
+	 */
+	public function prepareSLButtonShortCode() {
+		return sprintf( "<div class='%s' id='%s'></div>", esc_attr( self::SL_MODULE_SHORT_CODE_CLASS ), esc_attr( self::SL_MODULE_SHORT_CODE_ID ) );
+	}
+
+	/**
 	 *
 	 */
 	public function insertMetatags()
 	{
-		if ( $this->isLoadWidget() )
-		{
+		if ( $this->isLoadWidget() ) {
 			global $post;
 			$json_data = null;
 
-			if ( isset( $post ) )
-			{
+			if ( isset( $post ) ) {
 				$json_data = array(
 					'title'                    => $this->escape( $post->post_title ),
 					'url'                      => get_permalink( $post->ID ),
@@ -800,9 +818,7 @@ class Contextly
 				);
 			}
 
-			if ( $json_data !== null )
-			{
-				?>
+			if ( $json_data !== null ) {?>
 <meta name='contextly-page' id='contextly-page' content='<?php echo json_encode( $json_data ); ?>' />
 <?php
 			}
