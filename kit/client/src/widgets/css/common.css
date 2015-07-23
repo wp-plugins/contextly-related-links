@@ -5,3 +5,10 @@
 .ctx-clearfix:after {
   clear: both;
 }
+.ctx-nodefs {
+  margin: 0 !important;
+  padding: 0 !important
+}
+.ctx-nomar {
+  margin: 0 !important;
+}

@@ -5,17 +5,53 @@ Contextly.BaseSettings = Contextly.createClass({
 
   statics: {
 
+    getServerUrl: function(type) {
+      if (!Contextly.data.urls[type]) {
+        Contextly.Utils.error(type + ' server URL not found.');
+      }
+
+      var urls = Contextly.data.urls[type];
+      if (Contextly.Utils.isString(urls)) {
+        return urls;
+      }
+      else {
+        var keys = {};
+        keys[this.getMode()] = true;
+        keys[this.isHttps() ? 'https' : 'http'] = true;
+        for (var key in keys) {
+          if (typeof urls[key] === 'undefined') {
+            continue;
+          }
+
+          if (Contextly.Utils.isString(urls[key])) {
+            // URL found, add protocol if necessary. We can't use
+            // protocol-relative URLs directly because easyXDM can't handle
+            // them properly.
+            var url = urls[key];
+
+            if (url.indexOf('//') === 0) {
+              url = (this.isHttps() ? 'https' : 'http') + ':' + url;
+            }
+
+            return url;
+          }
+          else {
+            urls = urls[key];
+          }
+        }
+
+        // No URL found for the case.
+        Contextly.Utils.error(type + ' server URL not found');
+      }
+    },
+
     /**
      * Returns main Contextly server URL.
      *
      * @function
      */
     getMainServerUrl: function () {
-        if ( this.getMode() == 'dev' ) {
-            return "http" + ( this.isHttps() ? 's' : '' ) + "://dev.contextly.com/";
-        } else {
-            return "http" + ( this.isHttps() ? 's' : '' ) + "://contextly.com/";
-        }
+      return this.getServerUrl('main');
     },
 
     /**
@@ -24,11 +60,7 @@ Contextly.BaseSettings = Contextly.createClass({
      * @function
      */
     getAPIServerUrl: function () {
-        if ( this.getMode() == 'dev' ) {
-            return "http" + ( this.isHttps() ? 's' : '' ) + "://devrest.contextly.com/";
-        } else {
-            return "http" + ( this.isHttps() ? 's' : '' ) + "://rest.contextly.com/";
-        }
+      return this.getServerUrl('api');
     },
 
     /**
@@ -44,13 +76,10 @@ Contextly.BaseSettings = Contextly.createClass({
         this.metadataParser = Contextly.metadataParser.Default;
 
         if (!this.metadataParser.dataExists()) {
-          for (var key in Contextly.metadataParser) {
-            if (key === 'Base' || key === 'Default') {
-              continue;
-            }
-
-            if (Contextly.metadataParser[key].dataExists()) {
-              this.metadataParser = Contextly.metadataParser[key];
+          var formats = this.getSupportedMetadataFormats();
+          for (var i = 0; i < formats.length; i++) {
+            if (formats[i].dataExists()) {
+              this.metadataParser = formats[i];
               break;
             }
           }
@@ -61,17 +90,27 @@ Contextly.BaseSettings = Contextly.createClass({
     },
 
     /**
-     * Returns URL of the snippet CSS.
+     * Returns array of supported metadata formats sorted by reference.
      */
-    getSnippetCssUrl: function(settings) {
-      return this.getCdnCssUrl() + "wp_plugin/" + this.getPluginVersion() + "/css-api/widget/" + settings.display_type + "/template-" + settings.tabs_style + ".css";
-    },
+    getSupportedMetadataFormats: function() {
+      var result = [];
 
-    /**
-     * Returns URL of the sidebar CSS.
-     */
-    getSidebarCssUrl: function(settings) {
-      return this.getCdnCssUrl() + "wp_plugin/" + this.getPluginVersion() + "/css-api/sidebar/template-" + settings.theme + ".css";
+      for (var key in Contextly.metadataFormats) {
+        var parser = Contextly.metadataFormats[key];
+
+        if (typeof parser.getPropertiesMap === 'function') {
+          var map = parser.getPropertiesMap();
+          if (map.post_id) {
+            // Put foreign formats with post ID mapped first.
+            result.unshift(parser);
+            continue;
+          }
+        }
+
+        result.push(parser);
+      }
+
+      return result;
     },
 
     getPostDataForKey: function(key) {
@@ -82,14 +121,6 @@ Contextly.BaseSettings = Contextly.createClass({
     getPostDataForKeyCount: function(key) {
         return this.getMetadataParser()
           .getCount(key);
-    },
-
-    getPluginVersion: function () {
-      var version = this.getPostDataForKey('version');
-      if (version == null) {
-        version = '1.4';
-      }
-      return version;
     },
 
     getAppId: function () {
@@ -136,16 +167,6 @@ Contextly.BaseSettings = Contextly.createClass({
       return this.getPostDataForKeyCount('tags');
     },
 
-    // TODO Switch to Kit CDN.
-    getCdnCssUrl: function() {
-      if (this.isHttps()) {
-        return 'https://c714015.ssl.cf2.rackcdn.com/';
-      }
-      else {
-        return 'http://contextlysitescripts.contextly.com/';
-      }
-    },
-
     isAdmin: function () {
       return false;
     },
@@ -156,6 +177,32 @@ Contextly.BaseSettings = Contextly.createClass({
 
     isHttps: function () {
       return document.location.protocol === 'https:';
+    },
+
+    /**
+     * Function returning information about CMS plugin.
+     *
+     * @returns {Object|null}
+     *   Two properties are supported:
+     *   - client: short name of the CMS
+     *   - version: full version of the CMS plugin having format "Major.Minor"
+     *   We don't pass client information in case of empty object or null
+     *   returned.
+     */
+    getClientInfo: function() {
+      return null;
+    },
+
+    getKitVersion: function() {
+      return Contextly.data.versions.kit;
+    },
+
+    getCdnVersion: function() {
+      return Contextly.data.versions.cdn;
+    },
+
+    getAssetUrl: function(path, ext) {
+      return this.getServerUrl('cdn') + this.getCdnVersion() + '/' + path + '.' + ext;
     },
 
     getMode: function () {

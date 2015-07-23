@@ -485,14 +485,6 @@
       });
     },
 
-    escapeSizzleAttrValue: function(value) {
-      if (!value) {
-        return '';
-      }
-
-      return value.replace('"', '\\\"');
-    },
-
     activateTab: function (searchInfo) {
       var tabs = this.e.searchTabs
         .find('.search-tab');
@@ -501,8 +493,8 @@
         .removeClass('active');
 
       // Escape type and URL.
-      var escapedType = this.escapeSizzleAttrValue(searchInfo.type);
-      var escapedUrl = this.escapeSizzleAttrValue(searchInfo.siteUrl);
+      var escapedType = Contextly.Utils.escapeSizzleAttrValue(searchInfo.type);
+      var escapedUrl = Contextly.Utils.escapeSizzleAttrValue(searchInfo.siteUrl);
 
       tabs
         .filter('[data-search-type="' + escapedType + '"][data-site-url="' + escapedUrl + '"]:first')
@@ -602,7 +594,7 @@
       else {
         var visible = false;
         this.each(this.searchTypes, function(specs, key) {
-          var typeTabs = tabs.filter('[data-search-type="' + this.escapeSizzleAttrValue(key) + '"]');
+          var typeTabs = tabs.filter('[data-search-type="' + Contextly.Utils.escapeSizzleAttrValue(key) + '"]');
 
           if (specs.emptyQuery) {
             typeTabs.show();

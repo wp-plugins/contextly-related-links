@@ -2,86 +2,81 @@
 
   /**
    * @class
-   * @extends Contextly.widget.TextSnippet
+   * @extends Contextly.widget.BaseBlocksSnippet
    */
   Contextly.widget.BlocksSnippet = Contextly.createClass( /** @lends Contextly.widget.BlocksSnippet.prototype */ {
 
-    extend: Contextly.widget.TextSnippet,
+    extend: Contextly.widget.BaseBlocksSnippet,
 
-    getNumberOfLinksPerSection: function() {
-      return 6;
+    getHandlers: function(widgetHasData) {
+      var handlers = Contextly.widget.BaseBlocksSnippet.fn.getHandlers.apply(this, arguments);
+
+      if (widgetHasData) {
+        handlers.attachLinksHover = true;
+      }
+
+      return handlers;
     },
 
-    getLinksHTMLOfType: function(type) {
-      var html = "";
-      var linkCounter = 0;
-      var widget = this.widget;
-      var links_limit = this.getNumberOfLinksPerSection();
+    attachLinksHover: function() {
+      this.getWidgetElements()
+        .find('.ctx-link')
+        .bind('mouseenter', this.proxy(this.onLinkMouseEnter, true, true))
+        .bind('mouseleave', this.proxy(this.onLinkMouseLeave, true, true));
+    },
 
-      if (widget.links && widget.links[ type ]) {
-        for (var link_idx in widget.links[ type ]) {
-          linkCounter++;
-          if (link_idx >= links_limit) {
-            break;
+    onLinkMouseEnter: function(element) {
+      var link = $(element);
+      var p = link
+        .find('.ctx-link-title p')
+        .stop(true, true);
+
+      var startHeight = p.height();
+      link.addClass('ctx-expanded');
+      var endHeight = p.height();
+      if (endHeight <= startHeight) {
+        link.removeClass('ctx-expanded');
+        return;
+      }
+
+      p
+        .css('height', startHeight)
+        .animate({
+          height: endHeight
+        }, {
+          duration: 200,
+          complete: function() {
+            p.css('height', 'auto');
           }
+        });
+    },
 
-          var link = widget.links[ type ][ link_idx ];
+    onLinkMouseLeave: function(element) {
+      var link = $(element);
+      var p = link
+        .find('.ctx-link-title p')
+        .stop(true, true);
 
-          if (link.id && link.title) {
-            html += this.getLinkHTML(link, linkCounter);
+      if (!link.is('.ctx-expanded')) {
+        return;
+      }
+
+      var startHeight = p.height();
+      link.removeClass('ctx-expanded');
+      var endHeight = p.height();
+      link.addClass('ctx-expanded');
+
+      p
+        .css('height', startHeight)
+        .animate({
+          height: endHeight
+        }, {
+          duration: 200,
+          complete: function() {
+            p.css('height', '');
+            link.removeClass('ctx-expanded');
           }
-        }
-      }
-
-      return html;
-    },
-
-    getWidgetStyleClass: function() {
-      return 'ctx-content-block';
-    },
-
-    getWidgetHTML: function() {
-      var div = "";
-
-      div += "<div class='" + this.getWidgetStyleClass() + " ctx-nodefs'>";
-
-      var sections = this.widget.settings.display_sections;
-
-      div += "<div class='ctx-sections-container ctx-nomar'>";
-      for (var i = 0; i < sections.length; i++ ) {
-        var section_name = sections[i];
-
-        if (this.isDisplaySection(section_name)) {
-          var section_key = section_name + '_subhead';
-          var section_header = this.widget.settings[ section_key ];
-
-          div += "<div class='ctx-section ctx-clearfix'>";
-          div += "<div class='ctx-links-header ctx-clearfix'><p class='ctx-nodefs'>" + this.escape(section_header) + "</p></div>";
-
-          div += "<div class='ctx-links-content ctx-nodefs ctx-clearfix'>";
-          div += this.getLinksHTMLOfType(section_name);
-          div += "</div></div>";
-        }
-      }
-      div += "</div>";
-
-      if (this.isDisplayContextlyLogo()) {
-        div += this.getBrandingButtonHtml();
-      }
-
-      div += "</div>";
-
-      return div;
-    },
-
-    getLinkHTML: function(link, linkCounter) {
-      if (link.video) {
-        return this.getLinkHTMLVideo(link, linkCounter);
-      } else if (link.tweet) {
-        return this.getLinkHTMLTweet(link, linkCounter);
-      } else {
-        return this.getLinkHTMLNormal(link, linkCounter);
-      }
+        });
     },
 
     getInnerLinkHTML: function(link) {
@@ -94,33 +89,23 @@
       return inner_html;
     },
 
-    getLinkHTMLVideo: function(link, linkCounter) {
-      var linkClass = "";
-      if (linkCounter > 3) {
-        linkClass = " ctx-link-additional-" + linkCounter;
-      }
-      return "<div class='ctx-link" + linkClass + "'>" + this.getVideoLinkATag(link, this.getInnerLinkHTML(link)) + "</div>";
-    },
-
-    getLinkHTMLTweet: function(link, linkCounter) {
-      var linkClass = "";
-      if (linkCounter > 3) {
-        linkClass = " ctx-link-additional-" + linkCounter;
-      }
-      return "<div class='ctx-link" + linkClass + "'>" + this.getTweetLinkATag(link, this.getInnerLinkHTML(link)) + "</div>";
-    },
-
-    getLinkHTMLNormal: function(link, linkCounter) {
-      var linkClass = "";
-      if (linkCounter > 3) {
-        linkClass = " ctx-link-additional-" + linkCounter;
-      }
-      return "<div class='ctx-link" + linkClass + "'>" + this.getLinkATag(link, this.getInnerLinkHTML(link)) + "</div>";
+    getWidgetStyleClass: function() {
+      return 'ctx-content-block';
     },
 
     getCustomCssCode: function() {
       return Contextly.widget.BlocksCssCustomBuilder
         .buildCSS('.ctx-module-container', this.getSettings());
+    },
+
+    getLayoutModes: function() {
+      return {
+        "mobile": [0, 200],
+        "tablet": [200, 450],
+        "default": [450, 650],
+        "sec5": [650, 790],
+        "sec6": [790]
+      };
     }
 
   });

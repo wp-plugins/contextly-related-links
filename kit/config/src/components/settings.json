@@ -1,8 +1,11 @@
 {
+  "versions": true,
   "include": [
     "libraries/jquery",
     "components/create-class",
-    "components/metadata-parser"
+    "components/utils",
+    "components/metadata-parser",
+    "data/urls"
   ],
 
   "base": "components",

@@ -9,32 +9,49 @@ Contextly.widget.TextCssCustomBuilder = Contextly.createClass({
   statics: /** @lends Contextly.widget.TextCssCustomBuilder */ {
 
     buildCSS: function(entry, settings) {
-      var css_code = "";
+      var result = "";
+      var css = settings.css || {};
 
-      if (settings.css_code) {
-        css_code += Contextly.Utils.escape(settings.css_code);
-      }
-      if (settings.font_family) {
-        css_code += this.buildCSSRule(entry, ".ctx-content-text .ctx-links-content a", "font-family", settings.font_family);
-      }
-      if (settings.font_size) {
-        css_code += this.buildCSSRule(entry, ".ctx-content-text .ctx-links-content a", "font-size", settings.font_size);
-      }
-      if (settings.color_links) {
-
-        var getOppositeColor = this.oppositeColorGenerator(settings.color_links);
-        css_code += this.buildCSSRule(entry, ".ctx-link .ctx-video-icon", "background-color", settings.color_links);
-        css_code += this.buildCSSRule(entry, ".ctx-link .ctx-video-icon:after", "border-left-color", getOppositeColor);
-
-        css_code += this.buildCSSRule(entry, ".ctx-content-text .ctx-links-content a", "color", settings.color_links);
-
-        css_code += this.buildCSSRule(entry, ".ctx-links-content .ctx-link:before", "background-color", settings.color_links);
-      }
-      if (settings.color_background) {
-        css_code += this.buildCSSRule(entry, ".ctx-content-text .ctx-links-header", "background-color", settings.color_background);
+      if (css.custom_code) {
+        result += Contextly.Utils.escape(css.custom_code);
       }
 
-      return css_code;
+      var selector = '.ctx-content-text .ctx-links-header p';
+      if (css.title_font_family) {
+        result += this.buildCSSRule(entry, selector, 'font-family', css.title_font_family);
+      }
+      if (css.title_font_size) {
+        result += this.buildCSSRule(entry, selector, 'font-size', css.title_font_size);
+      }
+      if (css.title_color) {
+        result += this.buildCSSRule(entry, selector, 'color', css.title_color);
+      }
+
+      selector = [
+        '.ctx-content-text .ctx-link',
+        '.ctx-content-text .ctx-link a'
+      ];
+      if (css.links_font_family) {
+        result += this.buildCSSRule(entry, selector, 'font-family', css.links_font_family);
+      }
+      if (css.links_font_size) {
+        // Apply to the outer element only, because otherwise X% values wouldn't
+        // work properly.
+        result += this.buildCSSRule(entry, selector[0], 'font-size', css.links_font_size);
+      }
+      if (css.links_color) {
+        result += this.buildCSSRule(entry, selector, 'color', css.links_color);
+      }
+
+      selector = [
+        '.ctx-content-text .ctx-sections-container',
+        '.ctx-content-text .ctx-section'
+      ];
+      if (css.border_color) {
+        result += this.buildCSSRule(entry, selector, 'border-color', css.border_color);
+      }
+
+      return result;
     }
 
   }

@@ -1,0 +1,159 @@
+.ctx-content-float {
+	width: 100% !important;
+	margin: 5px 0 !important;
+	float: none !important;
+  clear: both !important;
+}
+.ctx-content-float .ctx-sections-container {
+  padding: 0 !important;
+  border-width: 0 0 1px 0 !important;
+  border-style: solid !important;
+  border-color: #e3e3e3;
+  margin: 0 0 5px 0 !important;
+}
+.ctx-content-float .ctx-section {
+  width: 100% !important;
+  float: none !important;
+  padding: 0 !important;
+  overflow: hidden !important; /* Force new block formatting context */
+  border-width: 1px 0 0 0 !important;
+  border-style: solid !important;
+  border-color: #e3e3e3;
+}
+.ctx-content-float .ctx-links-header p {
+  line-height: normal !important;
+  text-align: center !important;
+  font-weight: bold !important;
+  margin: 0.7em 0 0.7em !important;
+  color: #6d6d6d;
+  font-size: 19px;
+  font-family: Gotham, "Helvetica Neue", Helvetica, Arial, sans-serif
+}
+.ctx-content-float .ctx-links-content {
+	width: 100% !important;
+  text-align: center !important;
+  margin: 10px 0 20px 0 !important;
+}
+.ctx-content-float .ctx-links-content:first-child {
+  margin-top: 20px !important;
+}
+.ctx-content-float .ctx-link {
+	max-width: 220px !important;
+  display: inline-block !important;
+  vertical-align: top !important;
+  font-size: 14px;
+}
+.ctx-content-float .ctx-link.ctx-tweet {
+  max-width: 463px !important;
+  min-height: 1px !important;
+}
+.ctx-content-float .ctx-link-image img {
+	max-width: 100% !important;
+	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2) !important;
+  display: inline-block !important;
+  vertical-align: middle !important;
+}
+.ctx-content-float .ctx-link a {
+	display: block !important;
+  width: 100% !important;
+  border: none !important;
+	text-decoration: none !important;
+}
+.ctx-content-float .ctx-link,
+.ctx-content-float .ctx-link-title p {
+  font-family: Gotham, "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+.ctx-content-float .ctx-link-title {
+  padding: 0.5em 0 0 0 !important;
+}
+.ctx-content-float .ctx-link-title p {
+  width: 100% !important;
+  line-height: normal !important;
+  font-size: inherit !important;
+  color: #6d6d6d;
+
+  -moz-word-break: break-word;
+	word-break: break-word;
+	-webkit-hyphens: auto;
+	-moz-hyphens: auto;
+	hyphens: auto;
+}
+.ctx-content-float .twitter-tweet {
+  margin: 0 !important;
+}
+/* module's styles for different sizes*/
+.ctx-content-float .ctx-link.ctx-5,
+.ctx-content-float .ctx-link.ctx-6 {
+	display: none !important
+}
+/* MOBILE WIDGET */
+.ctx-content-float.ctx-module-mobile .ctx-links-content {
+  margin-bottom: 2px !important;
+}
+.ctx-content-float.ctx-module-mobile .ctx-link {
+	width: 100% !important;
+  margin: 0 auto 18px auto !important;
+}
+.ctx-content-float.ctx-module-mobile .ctx-link-image {
+	width: 100% !important;
+	margin: 0 !important;
+}
+.ctx-content-float.ctx-module-mobile .ctx-link.ctx-4,
+.ctx-content-float.ctx-module-mobile .ctx-social-section .ctx-link.ctx-2 {
+	display: none !important
+}
+.ctx-content-float.ctx-module-mobile .ctx-social-section .ctx-link.ctx-4 {
+	display: inline-block !important
+}
+/* TABLET WIDGET */
+.ctx-content-float.ctx-module-medium .ctx-links-content {
+  margin-bottom: 2px !important;
+}
+.ctx-content-float.ctx-module-medium .ctx-link {
+	width: 98% !important;
+	max-width: 100% !important;
+	margin: 0 1% 18px 1% !important
+}
+.ctx-content-float.ctx-module-medium .ctx-link.ctx-tweet {
+	max-width: 100% !important;
+}
+.ctx-content-float.ctx-module-medium .ctx-link-title {
+	width: 59% !important;
+	float: left !important;
+	padding: 0 1% 0 2% !important;
+  text-align: left !important;
+}
+.ctx-content-float.ctx-module-medium .ctx-link-image {
+	width: 38% !important;
+	float: left !important;
+}
+.ctx-content-float.ctx-module-medium .ctx-link.ctx-4,
+.ctx-content-float.ctx-module-medium .ctx-social-section .ctx-link.ctx-2 {
+	display: none !important
+}
+.ctx-content-float.ctx-module-medium .ctx-social-section .ctx-link.ctx-4 {
+	display: inline-block !important
+}
+/* DEFAULT WIDGET */
+.ctx-content-float.ctx-module-normal .ctx-link {
+	width: 30.33% !important;
+	margin: 0 1.5% !important
+}
+.ctx-content-float.ctx-module-normal .ctx-link.ctx-tweet {
+  width: 63.66% !important;
+}
+.ctx-content-float.ctx-module-normal .ctx-link.ctx-4,
+.ctx-content-float.ctx-module-normal .ctx-social-section .ctx-link.ctx-2 {
+	display: none !important
+}
+/* WIDE SCREEN */
+.ctx-content-float.ctx-module-wide .ctx-link {
+	width: 22.6% !important;
+	margin: 0 1.2% !important
+}
+.ctx-content-float.ctx-module-wide .ctx-link.ctx-tweet {
+  width: 47.6% !important;
+}
+.ctx-content-float.ctx-module-wide .ctx-social-section .ctx-link.ctx-2 {
+	display: none !important
+}

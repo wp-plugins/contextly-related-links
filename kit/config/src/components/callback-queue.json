@@ -1,0 +1,11 @@
+{
+  "include": [
+    "components/create-class",
+    "components/proxy"
+  ],
+
+  "base": "components",
+  "js": [
+    "callback-queue"
+  ]
+}

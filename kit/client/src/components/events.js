@@ -1,55 +1,48 @@
 /**
  * Created by andrew on 12/2/14.
  */
+(function($) {
 
-Contextly.LogPluginEventsType = {
-  EMAIL: 'email',
-  LOG: 'log'
-};
+  Contextly.EventsLogger = Contextly.createClass({
 
-Contextly.LogPluginEvents = Contextly.createClass({
+    statics: /** @lends Contextly.EventsLogger */ {
 
-    statics: /** @lends Contextly.LogPluginEvents */ {
+      logEvent: function(name, params) {
+        this.sendEvent(this.eventTypes.LOG, name, params);
+      },
 
-        fireEvent: function (type, args)
-        {
-            // Remove the type of event.
-            var args = Array.prototype.slice.call(arguments, 1);
+      emailEvent: function(name, message, params) {
+        params = params || {};
+        params.event_page = window.location.href;
 
-            jQuery(window).triggerHandler(type, args);
-        },
-
-        attachEvent: function (type, handler)
-        {
-            var self = this;
-
-            if ( typeof handler === 'undefined' )
-            {
-                handler = function(event, message) { self.emailEvent(type, message) };
-            }
-
-            jQuery(window).bind( type, handler );
-        },
-
-        emailEvent: function( event, message )
-        {
-            var json_message = null;
-
-            if ( typeof message !== 'undefined' ) {
-                json_message = easyXDM.getJSONObject().stringify(message);
-            }
-
-            Contextly.RESTClient.call(
-                'events',
-                'put',
-                {
-                    event_type: Contextly.LogPluginEventsType.EMAIL,
-                    event_name: event,
-                    event_page: window.location.href,
-                    event_message: json_message
-                }
-            );
+        if (message != null) {
+          params.event_message = easyXDM.getJSONObject().stringify(message);
         }
+
+        this.sendEvent(this.eventTypes.EMAIL, name, params);
+      },
+
+      tweetEvent: function(name, params) {
+        this.sendEvent(this.eventTypes.TWEET, name, params);
+      },
+
+      sendEvent: function(type, name, params) {
+        params = $.extend({
+          event_type: type,
+          event_name: name
+        }, params);
+
+        Contextly.RESTClient.call('events', 'put', params);
+      }
+
     }
 
-});
+  });
+
+  Contextly.EventsLogger.eventTypes = {
+    EMAIL: 'email',
+    LOG: 'log',
+    TWEET: 'tweet'
+  };
+
+})(jQuery);

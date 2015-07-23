@@ -4,7 +4,7 @@
 
   Contextly.overlay.Base = Contextly.createClass({
 
-    extend: Contextly.Proxy.prototype,
+    extend: [Contextly.Proxy.prototype, Contextly.Transmitter.prototype],
 
     statics: /** @lends Contextly.overlay.Base */ {
 
@@ -241,7 +241,7 @@
       },
 
       broadcast: function (type) {
-        return this.window.triggerHandler(type, [this]);
+        return Contextly.Transmitter.prototype.broadcast.call(this, type, this);
       },
 
       setDialogDimension: function(dimension, dialogSize) {

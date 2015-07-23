@@ -8,7 +8,14 @@
   "base": "components/metadata-parser",
   "js": [
     "base",
+    "base-single",
+    "base-multi",
+    "foreign-helper",
     "default",
-    "parsely-page"
+    "dublin-core",
+    "json-ld",
+    "open-graph",
+    "parsely-page",
+    "parsely-tags"
   ]
 }

@@ -12,10 +12,15 @@ class ContextlyKitAssetsManager extends ContextlyKitBase {
     $this->configsPath = $this->kit->getFolderPath('config', TRUE);
   }
 
-  protected function getConfig($packageName) {
+  /**
+   * @param string $packageName
+   *
+   * @return ContextlyKitAssetsConfig
+   */
+  public function getConfig($packageName) {
     if (!isset($this->configs[$packageName])) {
       $path = $this->configsPath . '/' . $packageName . '.json';
-      $this->configs[$packageName] = $this->kit->newAssetsConfig($path);
+      $this->configs[$packageName] = $this->kit->newAssetsConfig($packageName, $path);
     }
 
     return $this->configs[$packageName];
@@ -35,10 +40,11 @@ class ContextlyKitAssetsManager extends ContextlyKitBase {
    *   Internal use only. Stores the list of already found packages, to avoid
    *   parsing of the same package multiple times.
    *
-   * @return array
-   *   List of configs or NULLs keyed by package name.
+   * @return ContextlyKitAssetsConfig[]
+   *   Keys are package names, values are configs on added packages or NULLs on
+   *   ignored ones.
    */
-  protected function resolveDependencies($parentName, $ignore = array(), &$utilized = array()) {
+  function resolveDependencies($parentName, $ignore = array(), &$utilized = array()) {
     $utilized[$parentName] = TRUE;
 
     $result = array();
@@ -62,13 +68,36 @@ class ContextlyKitAssetsManager extends ContextlyKitBase {
   }
 
   /**
+   * @param ContextlyKitAssetsConfig[] $configs
+   * @param array $ignore
+   *
+   * @return array
+   */
+  function resolveExposed($configs, $ignore = array()) {
+    $ignore += $configs;
+
+    $exposed = array();
+    foreach ($configs as $config) {
+      if (!isset($config) || empty($config->expose)) {
+        continue;
+      }
+
+      foreach ($config->expose as $name) {
+        $exposed += $this->resolveDependencies($name, $ignore);
+      }
+    }
+    return $exposed;
+  }
+
+  /**
    * Adds assets of the specified package to the assets list.
    *
    * @param string $packageName
    * @param ContextlyKitAssetsList $assets
 	 * @param array $ignore
 	 *   Keys are package names to ignore, values are not used. Should be used
-	 *   to replace Kit libraries with CMS variants.
+	 *   to replace Kit libraries with CMS variants. Has no effect on exposed
+   *   packages, but still affects dependencies of exposed ones.
    *
    * @return array
    *   List of parsed packages, including ignored ones. Keys are package names,
@@ -80,13 +109,21 @@ class ContextlyKitAssetsManager extends ContextlyKitBase {
     $result = array();
     foreach ($configs as $key => $config) {
       $included = isset($config);
-
-      if ($included) {
-        $assets->parseConfig($config);
+      $result[$key] = $included;
+      if (!$included) {
+        continue;
       }
 
-      $result[$key] = $included;
+      // Add dependencies.
+      $assets->parseConfig($config);
     }
+
+    // Add exposed and their dependencies.
+    $exposed = $this->resolveExposed(array_filter($configs), $ignore);
+    if (!empty($exposed)) {
+      $assets->parseExposed($exposed);
+    }
+
     return $result;
   }
 
@@ -119,29 +156,31 @@ class ContextlyKitAssetsManager extends ContextlyKitBase {
     return $packages;
   }
 
-  function discoverPackagesToAggregate() {
-    $packages = $this->discoverPackages();
-    $aggregate = array();
-    foreach ($packages as $packageName) {
-      $config = $this->getConfig($packageName);
-      if (!empty($config->aggregate)) {
-        $aggregate[$packageName] = TRUE;
-      }
-    }
-    return $aggregate;
+}
+
+class ContextlyKitAssetsConfigBase extends ContextlyKitBase {
+
+  protected $config;
+
+  function getExposed() {
+    return array_diff_key((array) $this->config, array(
+      'aggregate' => TRUE,
+      'expose' => TRUE,
+      'versions' => TRUE,
+      'media' => TRUE,
+    ));
   }
 
 }
 
-class ContextlyKitAssetsConfig extends ContextlyKitBase {
-
-  protected $config;
+class ContextlyKitAssetsConfig extends ContextlyKitAssetsConfigBase {
 
   protected $filepath;
 
-  function __construct($kit, $path) {
+  function __construct($kit, $name, $path) {
     parent::__construct($kit);
 
+    $this->name = $name;
     $this->filepath = $path;
   }
 
@@ -172,6 +211,10 @@ class ContextlyKitAssetsConfig extends ContextlyKitBase {
     return $this->filepath;
   }
 
+  function getName() {
+    return $this->name;
+  }
+
   function __isset($name) {
     $this->load();
     return isset($this->config->{$name});
@@ -180,6 +223,11 @@ class ContextlyKitAssetsConfig extends ContextlyKitBase {
   function __get($name) {
     $this->load();
     return $this->config->{$name};
+  }
+
+  function getExposed() {
+    $this->load();
+    return parent::getExposed();
   }
 
 }
@@ -192,9 +240,20 @@ class ContextlyKitAssetsList extends ContextlyKitBase {
 
   protected $tpl = array();
 
+  protected $data = array();
+
   protected $media = array();
 
-  function extractAssets($base, $key, ContextlyKitAssetsConfig $config) {
+  protected $exposed = array();
+
+  /**
+   * Whether to add Kit & CDN versions to the data.
+   *
+   * @var bool
+   */
+  protected $versions = FALSE;
+
+  protected function extractAssets($base, $key, ContextlyKitAssetsConfig $config) {
     if (!isset($config->{$key})) {
       return;
     }
@@ -217,18 +276,37 @@ class ContextlyKitAssetsList extends ContextlyKitBase {
     }
   }
 
-  protected function extractTpl($base, ContextlyKitAssetsConfig $config) {
-    if (!isset($config->tpl)) {
+  protected function extractResources($base, $key, $config) {
+    if (!isset($config->{$key})) {
       return;
     }
 
     $parsed = array();
-    foreach ($config->tpl as $name => $filepath) {
+    foreach ($config->{$key} as $name => $filepath) {
       $parsed[$name] = $base . $filepath;
     }
 
     if (!empty($parsed)) {
-      $this->tpl += $parsed;
+      $this->{$key} += $parsed;
+    }
+  }
+
+  /**
+   * @param ContextlyKitAssetsConfigBase[] $configs
+   * @param bool $clear
+   */
+  public function parseExposed($configs, $clear = FALSE) {
+    if ($clear) {
+      $this->exposed = array();
+    }
+
+    foreach ($configs as $name => $config) {
+      if (isset($this->exposed[$name])) {
+        // Don't do it twice.
+        continue;
+      }
+
+      $this->exposed[$name] = $config->getExposed();
     }
   }
 
@@ -243,7 +321,13 @@ class ContextlyKitAssetsList extends ContextlyKitBase {
       $this->extractAssets($base, $key, $config);
     }
 
-    $this->extractTpl($base, $config);
+    foreach (array('tpl', 'data') as $key) {
+      $this->extractResources($base, $key, $config);
+    }
+
+    if (!empty($config->versions)) {
+      $this->versions = TRUE;
+    }
   }
 
   function getJs() {
@@ -256,6 +340,14 @@ class ContextlyKitAssetsList extends ContextlyKitBase {
 
   function getTpl() {
     return $this->tpl;
+  }
+
+  function getData() {
+    return $this->data;
+  }
+
+  function getExposed() {
+    return $this->exposed;
   }
 
   function getMedia() {
@@ -290,18 +382,52 @@ class ContextlyKitAssetsList extends ContextlyKitBase {
     return $urls;
   }
 
-  function buildTplUrls() {
-    $tpls = $this->getTpl();
-    if (empty($tpls)) {
+  protected function buildResourcesPaths($key, $extension) {
+    if (empty($this->{$key})) {
       return array();
     }
 
-    $urls = array();
-    foreach ($tpls as $path) {
-      $urls[$path] = $this->kit->buildAssetUrl($path . '.handlebars');
+    $paths = array();
+    $basePath = $this->kit->getFolderPath('client', TRUE);
+    foreach ($this->{$key} as $name => $filePath) {
+      $paths[$name] = $basePath . '/' . $filePath . '.' . $extension;
+    }
+    return $paths;
+  }
+
+  function buildTplPaths() {
+    return $this->buildResourcesPaths('tpl', 'handlebars');
+  }
+
+  function buildDataPaths() {
+    return $this->buildResourcesPaths('data', 'json');
+  }
+
+  protected function buildData($escapeHtml) {
+    return $this->kit->newDataManager($this->buildDataPaths())
+      ->addVersions($this->versions)
+      ->compile($escapeHtml);
+  }
+
+  protected function buildExposedAssets($escapeHtml) {
+    $exposed = $this->getExposed();
+    if (!empty($exposed)) {
+      return $this->kit->newExposedAssetsManager($exposed)
+        ->compile($escapeHtml);
     }
 
-    return $urls;
+    return '';
+  }
+
+  public function buildInlineJs($escapeHtml) {
+    if ($this->kit->isLiveMode()) {
+      // No reasons to build inline JS on live mode, as it's a part of the
+      // aggregated JS.
+      return '';
+    }
+    else {
+      return $this->buildData($escapeHtml) . $this->buildExposedAssets($escapeHtml);
+    }
   }
 
 }
@@ -328,6 +454,8 @@ abstract class ContextlyKitAssetsRenderer extends ContextlyKitBase {
   abstract public function renderJs();
 
   abstract public function renderTpl();
+
+  abstract public function renderInlineJs();
 
   abstract public function renderAll();
 
@@ -387,19 +515,68 @@ class ContextlyKitAssetsHtmlRenderer extends ContextlyKitAssetsRenderer {
         ));
     }
     else {
-      // Templates on the live mode the templates are compiled into JS file.
+      // Templates are compiled into JS file on live mode.
       $output = '';
     }
 
     return $output;
   }
 
+  public function renderInlineJs() {
+    $output = $this->assets->buildInlineJs(TRUE);
+    if ($output !== '') {
+      $output = '<script type="text/javascript">' . $output . "</script>\n";
+    }
+    return $output;
+  }
+
   public function renderAll() {
     return implode("\n", array(
-      $this->renderCSS(),
-      $this->renderJS(),
+      $this->renderCss(),
+      $this->renderJs(),
+      $this->renderInlineJs(),
       $this->renderTpl(),
     ));
+  }
+
+}
+
+class ContextlyKitAssetsConfigAggregated extends ContextlyKitAssetsConfigBase {
+
+  protected $packageName;
+
+  /**
+   * @var \Symfony\Component\Filesystem\Filesystem
+   */
+  protected $fs;
+
+  /**
+   * @param ContextlyKit $kit
+   * @param ContextlyKitPackageManager $manager
+   * @param $packageName
+   */
+  public function __construct($kit, $manager, $packageName) {
+    parent::__construct($kit);
+
+    $this->config = array();
+    $this->fs = $manager->getFs();
+    $this->packageName = $packageName;
+  }
+
+  public function &__get($name) {
+    return $this->config[$name];
+  }
+
+  public function __isset($name) {
+    return isset($this->config[$name]);
+  }
+
+  public function __set($name, $value) {
+    $this->config[$name] = $value;
+  }
+
+  public function __unset($name) {
+    unset($this->config[$name]);
   }
 
 }

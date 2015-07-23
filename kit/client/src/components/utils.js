@@ -39,33 +39,6 @@
         }
       },
 
-      loadCssFile: function(css_url, contextly_id) {
-        if (contextly_id) {
-          // Remove previously loaded script
-          $('link[contextly_id="' + contextly_id + '"]').remove();
-        }
-
-        $("<link>")
-          .attr({
-            rel: "stylesheet",
-            media: "screen",
-            type: "text/css",
-            href: css_url,
-            contextly_id: contextly_id
-          })
-          .appendTo("head");
-      },
-
-      loadCustomCssCode: function(custom_css, contextly_id) {
-        if (contextly_id) {
-          // Remove previously loaded script
-          $('style[contextly_id="' + contextly_id + '"]').remove();
-        }
-
-        $("head")
-          .append("<style type='text/css' contextly_id='" + contextly_id + "'>" + custom_css + "</style>");
-      },
-
       escape: function(text) {
         if (text) {
           return text
@@ -76,6 +49,14 @@
             .replace(/'/g, "&#039;");
         }
         return '';
+      },
+
+      escapeSizzleAttrValue: function(value) {
+        if (!value) {
+          return '';
+        }
+
+        return value.replace('"', '\\\"');
       },
 
       /**
@@ -99,6 +80,29 @@
        */
       isArray: function(o) {
         return Object.prototype.toString.call(o) === '[object Array]';
+      },
+
+      /**
+       * Returns true if passed variable is string.
+       *
+       * @see http://stackoverflow.com/a/9436948/404521
+       */
+      isString: function(o) {
+        return (typeof o === 'string' || o instanceof String);
+      },
+
+      /**
+       * Returns true if the passed variable is an empty object.
+       */
+      isEmptyObject: function(o) {
+        for (var key in o) {
+          return false;
+        }
+        return true;
+      },
+
+      error: function(msg) {
+        throw new Error(msg);
       }
 
     }

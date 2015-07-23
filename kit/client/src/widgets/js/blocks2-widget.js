@@ -2,11 +2,11 @@
 
   /**
    * @class
-   * @extends Contextly.widget.BlocksSnippet
+   * @extends Contextly.widget.BaseBlocksSnippet
    */
   Contextly.widget.Blocks2Snippet = Contextly.createClass( /** @lends Contextly.widget.Blocks2Snippet.prototype */ {
 
-    extend: Contextly.widget.BlocksSnippet,
+    extend: Contextly.widget.BaseBlocksSnippet,
 
     getWidgetStyleClass: function() {
       return 'ctx-content-block2';
@@ -27,6 +27,15 @@
     getCustomCssCode: function() {
       return Contextly.widget.Blocks2CssCustomBuilder
         .buildCSS('.ctx-module-container', this.getSettings());
+    },
+
+    getLayoutModes: function() {
+      return {
+        "mobile": [0, 400],
+        "default": [400, 650],
+        "sec5": [650, 790],
+        "sec6": [790]
+      };
     }
 
   });

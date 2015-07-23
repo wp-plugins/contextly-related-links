@@ -1,0 +1,6 @@
+{
+  "base": "libraries/twitter",
+  "js": [
+    "twitter-wjs"
+  ]
+}

@@ -1,0 +1,75 @@
+/* Widget common */
+#ctx-sl-subscribe,
+.ctx-subscribe-container {
+  text-align: right;
+  width: 100% !important;
+  margin: 8px 0 !important;
+  padding: 0 !important;
+  white-space: nowrap !important;
+}
+
+.ctx-subscribe-link {
+  font-weight: bold !important;
+  display: inline-table !important;
+  cursor: pointer !important;
+  border-collapse: separate !important;
+  overflow: hidden !important;
+  text-decoration: none !important;
+  box-sizing: content-box !important;
+  background-clip: content-box !important;
+  border-radius: 5px;
+  font-family: Helvetica, Arial, sans-serif;
+}
+
+.ctx-subscribe-link.ctx-height-short {
+  line-height: 1.8em !important;
+}
+.ctx-subscribe-link.ctx-height-middle {
+  line-height: 2.1em !important;
+}
+.ctx-subscribe-link.ctx-height-tall {
+  line-height: 2.5em !important;
+}
+.ctx-subscribe-link.ctx-text-shadow {
+  text-shadow: 0 2px 3px rgba(69, 69, 69, 0.3) !important;
+}
+
+.ctx-subscribe-link .ctx-subscribe-row {
+  display: table-row !important;
+}
+
+.ctx-subscribe-link .ctx-subscribe-logo,
+.ctx-subscribe-link .ctx-subscribe-label {
+  display: table-cell !important;
+  vertical-align: middle !important;
+}
+.ctx-subscribe-link .ctx-subscribe-logo {
+  padding: 0 0 0 0.5em !important;
+}
+.ctx-subscribe-link .ctx-subscribe-label {
+  padding: 0 0.5em !important;
+}
+
+.ctx-subscribe-link .ctx-subscribe-logo:before {
+  display: block !important;
+}
+.ctx-subscribe-link .ctx-subscribe-logo.ctx-icon-logo:before {
+  font-size: 1.5em !important;
+}
+.ctx-subscribe-link .ctx-subscribe-logo.ctx-image-logo:before {
+  content: "\00a0" !important; /* non-breaking-space */
+  background-image: url('../../img/storyline/contextly-logo.png') !important;
+  background-position: center center !important;
+  background-repeat: no-repeat !important;
+  width: 12px !important;
+}
+
+.ctx-subscribe-link.ctx-theme-transparent.ctx-no-transitions,
+.ctx-subscribe-link.ctx-theme-button.ctx-no-transitions,
+.ctx-subscribe-link.ctx-theme-split-button .ctx-subscribe-label.ctx-no-transitions,
+.ctx-subscribe-link.ctx-theme-split-button .ctx-subscribe-logo.ctx-no-transitions {
+  -webkit-transition: none 0s ease 0s !important;
+  -moz-transition: none 0s ease 0s !important;
+  -o-transition: none 0s ease 0s !important;
+  transition: none 0s ease 0s !important;
+}

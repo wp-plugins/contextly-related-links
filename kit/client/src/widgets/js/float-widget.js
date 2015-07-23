@@ -2,11 +2,11 @@
 
   /**
    * @class
-   * @extends Contextly.widget.BlocksSnippet
+   * @extends Contextly.widget.BaseBlocksSnippet
    */
   Contextly.widget.FloatSnippet = Contextly.createClass( /** @lends Contextly.widget.FloatSnippet.prototype */ {
 
-    extend: Contextly.widget.BlocksSnippet,
+    extend: Contextly.widget.BaseBlocksSnippet,
 
     getWidgetStyleClass: function() {
       return 'ctx-content-float';
@@ -31,6 +31,15 @@
     getCustomCssCode: function() {
       return Contextly.widget.FloatCssCustomBuilder
         .buildCSS('.ctx-module-container', this.getSettings());
+    },
+
+    getLayoutModes: function() {
+      return {
+        "mobile": [0, 240],
+        "medium": [240, 400],
+        "normal": [400, 700],
+        "wide": [700]
+      };
     }
 
   });

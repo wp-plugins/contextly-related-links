@@ -8,6 +8,21 @@
 
     extend: Contextly.widget.BaseLinksList,
 
+    construct: function(widget) {
+      Contextly.widget.BaseLinksList.apply(this, arguments);
+
+      this.widget_type = Contextly.widget.types.SNIPPET;
+      this.widget_html_id = 'ctx-module';
+    },
+
+    getWidgetContainerClass: function() {
+      return 'ctx-module-container';
+    },
+
+    getAssetsPackageName: function() {
+      return 'widgets/snippet/' + this.getSettings().display_type;
+    },
+
     getWidgetStyleClass: function() {
       return 'ctx-content-text';
     },
@@ -17,17 +32,8 @@
 
       var sections = this.widget.settings.display_sections;
 
-      if (sections.length == 1) {
-        this.addColumnCounterClass("ctx-text-column-one");
-      }
-      else {
-        this.addColumnCounterClass("ctx-text-column-multiple");
-      }
-
-      div += "<div class='" + this.getWidgetStyleClass() + " ctx-nodefs'>";
+      div += "<div class='ctx-module " + this.getWidgetStyleClass() + " ctx-nodefs'>";
       div += "<div class='ctx-sections-container ctx-clearfix'>";
-
-      var sections = this.widget.settings.display_sections;
 
       for (var i = 0; i < sections.length; i++ ) {
         var section_name = sections[i];
@@ -35,10 +41,18 @@
         if (this.isDisplaySection(section_name)) {
           var section_key = section_name + '_subhead';
           var section_header = this.widget.settings[ section_key ];
+          var section_classes = ['ctx-section', 'ctx-section-' + this.escape(section_name)];
 
-          div += "<div class='ctx-section'>";
+          // Mark single column on the row with a special class.
+          if (i % 2 === 0 && i + 1 === sections.length) {
+            section_classes.push('ctx-wide');
+          }
 
-          div += "<div class='ctx-links-header'><p class='ctx-nodefs'>" + this.escape(section_header) + "</p></div>";
+          div += "<div class='" + section_classes.join(' ') + "'>";
+
+          if (section_header) {
+            div += "<div class='ctx-links-header'><p class='ctx-nodefs'>" + this.escape(section_header) + "</p></div>";
+          }
 
           div += "<div class='ctx-links-content'>" + this.getLinksHTMLOfType(section_name) + "</div>";
           div += "</div>";
@@ -47,16 +61,9 @@
       div += "</div>";
       div += "</div>";
 
-      if (this.isDisplayContextlyLogo()) {
-        div += this.getBrandingButtonHtml();
-      }
+      div += this.getBrandingButtonHtml();
 
       return div;
-    },
-
-    addColumnCounterClass: function(className) {
-      var getModuleId = this.widget_html_id;
-      $("#" + getModuleId).addClass(className);
     },
 
     getLinksHTMLOfType: function(type) {
@@ -76,9 +83,39 @@
       return html;
     },
 
+    getInnerLinkHTML: function(link) {
+      var icon = this.getLinkIcon(link);
+      if (icon === '') {
+        icon = '<span class="ctx-icon ctx-bullet"></span>';
+      }
+
+      return icon + link.title;
+    },
+
+    getHandlers: function(widgetHasData) {
+      var handlers = Contextly.widget.BaseLinksList.fn.getHandlers.apply(this, arguments);
+
+      if (widgetHasData && !Contextly.Settings.isAdmin()) {
+        handlers.attachWidgetViewHandler = true;
+      }
+
+      return handlers;
+    },
+
     getCustomCssCode: function() {
       return Contextly.widget.TextCssCustomBuilder
         .buildCSS('.ctx-module-container', this.getSettings());
+    },
+
+    buildLayoutClass: function(mode) {
+      return 'ctx-module-' + mode;
+    },
+
+    getLayoutModes: function() {
+      return {
+        "mobile": [0, 450],
+        "default": [450]
+      }
     }
 
   });

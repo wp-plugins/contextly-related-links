@@ -9,17 +9,44 @@
     extend: Contextly.widget.BaseLinksList,
 
     construct: function(widget) {
-      if (widget) {
-        this.widget = widget;
-        this.widget_type = Contextly.widget.types.SIDEBAR;
-        this.widget_html_id = 'contextly-' + widget.id;
-      }
+      Contextly.widget.BaseLinksList.apply(this, arguments);
+
+      this.widget_type = Contextly.widget.types.SIDEBAR;
+      this.widget_html_id = 'contextly-' + widget.id;
+    },
+
+    getWidgetContainerClass: function() {
+      return 'ctx-sidebar-container--' + this.getWidget().id;
+    },
+
+    getWidgetStyleClass: function() {
+      return 'ctx-content-sidebar';
     },
 
     getWidgetHTML: function() {
-      return "<div class='ctx-content-sidebar'><div class='ctx-sb-content'>"
+      var html = '';
+
+      var title = this.widget.name;
+      if (title) {
+        html += "<div class='ctx-sb-title'><p>" + this.escape(title) + "</p></div>";
+      }
+
+      var description = this.widget.description;
+      if (description) {
+        html += "<div class='ctx-sb-description'><p>" + this.escape(description) + "</p></div>";
+      }
+
+      html += "<div class='ctx-sb-content'>"
         + this.getLinksHTMLOfType('previous')
-        + "</div></div>";
+        + "</div>";
+
+      var classes = [
+        'ctx-sidebar',
+        this.getWidgetStyleClass(),
+        'ctx-sidebar-' + this.widget.layout,
+        'ctx-clearfix'
+      ];
+      return "<div class='" + this.escape(classes.join(' ')) + "'>" + html + "</div>";
     },
 
     getLinkATag: function(link, content) {
@@ -31,7 +58,7 @@
     },
 
     getLinkHTML: function(link) {
-      var html = "<div class='ctx-sb-fotmater'>";
+      var html = '';
 
       if (link.thumbnail_url) {
 
@@ -48,20 +75,29 @@
         html += "<div class='ctx-sb-img'>" + image_href + "</div>";
       }
 
+      var linkContent = link.title;
+      if (!link.thumbnail_url) {
+        linkContent = '<span class="ctx-icon ctx-bullet"></span>' + linkContent;
+      }
+      if (this.widget.settings.display_link_dates && link.publish_date) {
+        linkContent += "<br /><span class='ctx-pub-date'>" + Contextly.Utils.dateTextDiff(link.publish_date) + "</span>";
+      }
+
+      var a;
       if (link.video) {
-        html += "<div class='ctx-sb-text'><p>" + this.getVideoLinkATag(link, link.title) + "</p></a>";
+        a = this.getVideoLinkATag(link, linkContent);
       }
       else {
-        html += "<div class='ctx-sb-text'><p>" + this.getLinkATag(link, link.title) + "</p></a>";
+        a = this.getLinkATag(link, linkContent);
       }
 
-      if (this.widget.settings.display_link_dates && link.publish_date) {
-        html += " <span class='link-pub-date'>" + Contextly.Utils.dateTextDiff(link.publish_date) + "</span>";
+      var classes = ['ctx-sb-text'];
+      if (!link.thumbnail_url) {
+        classes.push('ctx-sb-no-thumbnail');
       }
+      html += "<div class='" + classes.join(' ') + "'><p>" + a + "</p></div>";
 
-      html += "</div>";
-      html += "</div>";
-
+      html = "<div class='ctx-sb-fotmater ctx-clearfix'>" + html + "</div>";
       return html;
     },
 
@@ -80,79 +116,50 @@
       return html;
     },
 
-    display: function() {
-      if ( this.hasWidgetData() ) {
-        // Build widget html and display it
-        var html = this.getWidgetHTML();
-        this.displayHTML(html);
+    getHandlers: function(widgetHasData) {
+      // We don't need all the snippet handlers here, so jump over the parent.
+      var handlers = Contextly.widget.Base.prototype.getHandlers.apply(this, arguments);
 
-        // Do some sidebar modifications
-        this.getDisplayElement().removeClass('ctx-sidebar-container')
-            .addClass('ctx-sidebar')
-            .addClass('ctx-sidebar-' + this.widget.layout)
-            .addClass('ctx-sb-clearfix');
-
-        // Check if we need to add sidebar title and description
-        var title = this.widget.name;
-        var description = this.widget.description;
-        var sidebar_content = this.getDisplayElement().find('.ctx-content-sidebar');
-
-        if (description) {
-            sidebar_content.prepend("<div class='ctx-sb-description'><p>" + this.escape(description) + "</p></div>");
-        }
-        if (title) {
-            sidebar_content.prepend("<div class='ctx-sb-title'><p>" + this.escape(title) + "</p></div>");
-        }
-
-        this.loadCss('sidebar-css');
-        this.setResponsiveFunction();
-        this.broadcastWidgetDisplayed();
+      if (widgetHasData) {
+        handlers.setUpResponsiveLayout = true;
       }
+
+      return handlers;
     },
 
-    getWidgetCSSUrl: function() {
-      return Contextly.Settings.getSidebarCssUrl(this.getSettings());
+    getAssetsPackageName: function() {
+      return 'widgets/sidebar/default';
     },
 
     getCustomCssCode: function() {
       return Contextly.widget.SidebarCssCustomBuilder
-        .buildCSS('.ctx-sidebar', this.getSettings());
+        .buildCSS('.ctx-sidebar-container', this.getSettings());
     },
 
-    setResponsiveFunction: function ()
-    {
-        var self = this;
+    getLayoutModes: function() {
+      return {
+        "mobile": [0, 200],
+        "default": [200]
+      };
+    },
 
-        $(window).resize(function() {
-            self.runResponsive();
+    checkLayoutThresholds: function() {
+      // TODO Avoid hard-coding screen condition.
+      if (this.getScreenWidth() <= 540) {
+        var elements = this.getWidgetElements();
+        this.eachElement(elements, function(element) {
+          this.setLayoutMode(element, 'mobile');
         });
-
-        window.setTimeout(function() {
-            self.runResponsive();
-        }, 100);
+      }
+      else {
+        Contextly.widget.BaseLinksList.fn.checkLayoutThresholds.apply(this, arguments);
+      }
     },
 
-    runResponsive: function ()
-    {
-        var minWidth = 200;
-        var minWidthRatio = 2.7;
-        var width = this.getDisplayElementWidth();
-
-        if ( width < minWidth || minWidth * minWidthRatio >= this.getScreenWidth() )
-        {
-            this.getDisplayElement()
-                .addClass( "ctx-sb-clearfix" )
-                .addClass( "ctx-sidebar-mobile" )
-                .removeClass( "ctx-sidebar-default" );
-        }
-        else
-        {
-            this.getDisplayElement()
-                .addClass( "ctx-sb-clearfix" )
-                .addClass( "ctx-sidebar-default" )
-                .removeClass( "ctx-sidebar-mobile" );
-        }
+    buildLayoutClass: function(mode) {
+      return 'ctx-sidebar-' + mode;
     }
+
   })
 
 })(jQuery);

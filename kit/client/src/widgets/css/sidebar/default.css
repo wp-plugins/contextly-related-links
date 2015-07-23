@@ -1,0 +1,139 @@
+.ctx-content-sidebar,
+.ctx-content-sidebar .ctx-sb-title,
+.ctx-content-sidebar .ctx-sb-description,
+.ctx-content-sidebar .ctx-sb-content {
+  border-width: 0 !important;
+  border-style: solid !important;
+  border-color: #e3e3e3;
+}
+.ctx-content-sidebar {
+  margin: 5px 0 !important;
+  padding: 0 8px !important;
+  -webkit-box-sizing: border-box !important;
+  -moz-box-sizing: border-box !important;
+	box-sizing: border-box !important;
+	border-width: 0 2px !important;
+}
+.ctx-content-sidebar .ctx-sb-title:first-child,
+.ctx-content-sidebar .ctx-sb-description:first-child {
+  border-top-width: 1px !important;
+}
+.ctx-content-sidebar .ctx-sb-title p {
+	margin: 0 0 0.5em 0 !important;
+	padding: 0.5em 8px 0 8px !important;
+  line-height: normal !important;
+  font-weight: bold !important;
+  font-family: Gotham, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 19px;
+  color: #6d6d6d;
+}
+.ctx-content-sidebar .ctx-sb-description {
+	width: 100% !important;
+	margin: 0 !important;
+}
+.ctx-content-sidebar .ctx-sb-description p {
+	margin: 0.7em 0 !important;
+	padding: 0 8px !important;
+  line-height: normal !important;
+  font-weight: normal !important;
+	font-family: Gotham, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 14px;
+  color: #6d6d6d;
+}
+.ctx-content-sidebar .ctx-sb-description:first-child p {
+  margin-top: 0 !important;
+  padding-top: 0.7em !important;
+}
+.ctx-content-sidebar .ctx-sb-content {
+	width: 100% !important;
+	margin: 0 !important;
+	padding: 0 !important;
+  border-bottom-width: 1px !important;
+}
+.ctx-content-sidebar .ctx-sb-content:first-child {
+  border-top-width: 1px !important;
+}
+.ctx-content-sidebar .ctx-sb-link,
+.ctx-content-sidebar .ctx-sb-text p {
+  font-family: Gotham, "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+.ctx-content-sidebar .ctx-sb-link {
+  margin: 0.75em 0 !important;
+  padding: 0 8px !important;
+  font-size: 16px;
+}
+.ctx-content-sidebar .ctx-sb-img {
+  float: left !important;
+  padding: 0 8px 0 0 !important;
+  box-sizing: content-box !important;
+  width: 50% !important;
+  max-width: 82px;
+}
+.ctx-content-sidebar .ctx-sb-img img {
+  float: left !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: none !important;
+  width: 100% !important;
+}
+.ctx-content-sidebar .ctx-sb-text {
+  overflow: hidden !important; /* Force new block formatting context */
+}
+.ctx-content-sidebar .ctx-sb-text p {
+  margin: 0 !important;
+  padding: 0 !important;
+  line-height: normal !important;
+  font-weight: normal !important;
+  font-size: inherit !important;
+}
+.ctx-content-sidebar .ctx-sb-text a {
+  display: block !important;
+  text-decoration: none !important;
+  color: #6d6d6d;
+}
+.ctx-content-sidebar .ctx-sb-text.ctx-sb-no-thumbnail a {
+  margin-left: 1em !important;
+}
+.ctx-content-sidebar .ctx-pub-date {
+  font-size: 0.9em !important;
+}
+.ctx-content-sidebar .ctx-icon {
+  position: relative !important;
+  margin: 0 0 0 -1em !important;
+  width: 1em !important;
+  display: inline-block !important;
+  text-align: left !important;
+}
+.ctx-content-sidebar .ctx-icon.ctx-bullet {
+  font-family: "Arial Black", sans-serif !important;
+}
+.ctx-content-sidebar .ctx-bullet:before {
+  content: "\2022";
+}
+/* Sidebar's styles for different screen sizes */
+.ctx-content-sidebar.ctx-sidebar-mobile {
+  width: 100% !important;
+  border: none !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+.ctx-content-sidebar.ctx-sidebar-default.ctx-sidebar-left {
+  float: left !important;
+  margin-right: 10px !important;
+  max-width: 49% !important;
+  border-left: none !important;
+  padding-left: 0 !important;
+}
+.ctx-content-sidebar.ctx-sidebar-default.ctx-sidebar-right {
+  float: right !important;
+  margin-left: 10px !important;
+  max-width: 49% !important;
+  border-right: none !important;
+  padding-right: 0 !important;
+}
+.ctx-content-sidebar.ctx-sidebar-default.ctx-sidebar-wide {
+  width: 100% !important;
+  border: none !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}

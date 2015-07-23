@@ -1,0 +1,11 @@
+{
+  "aggregate": true,
+  "include": [
+    "widgets/page-view"
+  ],
+
+  "base": "mods/dmn",
+  "js": [
+    "metadata-parser"
+  ]
+}

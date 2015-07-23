@@ -1,6 +1,7 @@
 (function($) {
 
   Contextly.metadataParser = Contextly.metadataParser || {};
+  Contextly.metadataFormats = Contextly.metadataFormats || {};
 
   Contextly.metadataParser.Base = Contextly.createClass({
 

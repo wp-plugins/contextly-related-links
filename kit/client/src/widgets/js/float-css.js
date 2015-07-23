@@ -9,31 +9,55 @@ Contextly.widget.FloatCssCustomBuilder = Contextly.createClass({
   statics: /** @lends Contextly.widget.FloatCssCustomBuilder */ {
 
     buildCSS: function(entry, settings) {
-      var css_code = "";
-      if (settings.css_code) {
-        css_code += Contextly.Utils.escape(settings.css_code);
+      var result = '';
+      var css = settings.css || {};
+
+      if (css.custom_code) {
+        result += Contextly.Utils.escape(css.custom_code);
       }
 
-      if (settings.font_family) {
-        css_code += this.buildCSSRule(entry, ".ctx-content-float .ctx-link-title p", "font-family", settings.font_family);
+      var selector = '.ctx-content-float .ctx-links-header p';
+      if (css.title_font_family) {
+        result += this.buildCSSRule(entry, selector, 'font-family', css.title_font_family);
       }
-      if (settings.font_size) {
-        css_code += this.buildCSSRule(entry, ".ctx-content-float .ctx-link-title p", "font-size", settings.font_size);
+      if (css.title_font_size) {
+        result += this.buildCSSRule(entry, selector, 'font-size', css.title_font_size);
       }
-
-      if (settings.color_links) {
-        css_code += this.buildCSSRule(entry, ".ctx-content-float .ctx-link-title p", "color", settings.color_links);
-
-        var getOppositeColor = this.oppositeColorGenerator(settings.color_links);
-        css_code += this.buildCSSRule(entry, ".ctx-link-title .ctx-video-icon", "background-color", settings.color_links);
-        css_code += this.buildCSSRule(entry, ".ctx-link-title .ctx-video-icon:after", "border-left-color", getOppositeColor);
+      if (css.title_color) {
+        result += this.buildCSSRule(entry, selector, 'color', css.title_color);
       }
 
-      if (settings.color_background) {
-        css_code += this.buildCSSRule(entry, ".ctx-content-float .ctx-links-header", "background-color", settings.color_background);
+      selector = [
+        '.ctx-content-float .ctx-link',
+        '.ctx-content-float .ctx-link-title p'
+      ];
+      if (css.links_font_family) {
+        result += this.buildCSSRule(entry, selector, 'font-family', css.links_font_family);
+      }
+      if (css.links_font_size) {
+        // Apply to the outer element only, because otherwise X% values wouldn't
+        // work properly.
+        result += this.buildCSSRule(entry, selector[0], 'font-size', css.links_font_size);
+      }
+      if (css.links_color) {
+        // Apply to the inner only, as it's done by default styles.
+        result += this.buildCSSRule(entry, selector[1], 'color', css.links_color);
       }
 
-      return css_code;
+      selector = [
+        '.ctx-content-float .ctx-sections-container',
+        '.ctx-content-float .ctx-section'
+      ];
+      if (css.border_color) {
+        result += this.buildCSSRule(entry, selector, 'border-color', css.border_color);
+      }
+
+      selector = '.ctx-content-float';
+      if (css.background_color) {
+        result += this.buildCSSRule(entry, selector, 'background-color', css.background_color);
+      }
+
+      return result;
     }
 
   }

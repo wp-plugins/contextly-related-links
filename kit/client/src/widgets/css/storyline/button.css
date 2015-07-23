@@ -1,0 +1,12 @@
+/* Widget button theme */
+.ctx-subscribe-link.ctx-theme-button {
+  font-size: 20px;
+  color: #4c4c4c;
+  background: #ffffff;
+  border-color: #b5b5b5;
+  border-width: 1px !important;
+  border-style: solid !important;
+}
+.ctx-subscribe-link.ctx-theme-button:hover {
+  background-color: #ededed;
+}

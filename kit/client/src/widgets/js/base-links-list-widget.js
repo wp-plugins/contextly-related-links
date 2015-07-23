@@ -12,16 +12,15 @@
 
     construct: function(widget) {
       this.widget = widget;
-      this.widget_type = Contextly.widget.types.SNIPPET;
-      this.widget_html_id = 'ctx-module';
-    },
-
-    getDisplayElementWidth: function() {
-      return this.getDisplayElement().width();
+      this.widget_elements = null;
+      this.module_view_interval = null;
+      this.first_link_elements = [];
+      this.document_hidden_property = null;
+      this.document_visibility_event = null;
     },
 
     getScreenWidth: function () {
-        return $(window).width();
+      return $(window).width();
     },
 
     hasWidgetData: function () {
@@ -44,33 +43,35 @@
     },
 
     display: function() {
-      if (this.hasWidgetData()) {
+      var widgetHasData = this.hasWidgetData();
+
+      if (widgetHasData) {
         var widget_html = this.getWidgetHTML();
-
         this.displayHTML( widget_html );
-        this.loadCss('widget-css');
-
-        var settings = this.getSettings();
-        if (settings && settings.display_type) {
-          this.getDisplayElement().attr('widget-type', settings.display_type);
-        }
-
-        this.attachLinksPopups();
       }
       else {
-        // Hide content of the snippet placeholder (e.g. Loading...)
-        this.getDisplayElement().empty();
+        // Hide content of the snippet placeholders (e.g. Loading...)
+        this.getWidgetContainers().empty();
       }
 
-      this.setResponsiveFunction();
+      this.attachHandlers(widgetHasData);
       this.broadcastWidgetDisplayed();
     },
 
-    broadcastWidgetDisplayed: function() {
-      var type = Contextly.widget.broadcastTypes.DISPLAYED;
-      $(window).triggerHandler(type, [this.widget_type, this]);
+    getHandlers: function(widgetHasData) {
+      var handlers = Contextly.widget.Base.prototype.getHandlers.apply(this, arguments);
+
+      if (widgetHasData) {
+        handlers.attachLinksPopups = true;
+        handlers.attachBrandingHandlers = true;
+        handlers.queueTweetsRendering = true;
+        handlers.setUpResponsiveLayout = true;
+      }
+
+      return handlers;
     },
 
+    // TODO Refactor.
     attachLinksPopups: function() {
       function onVideoLinkClick(target, e) {
         e.preventDefault();
@@ -83,18 +84,7 @@
         Contextly.MainServerAjaxClient.call(contextly_url);
       }
 
-      function onTweetLinkClick(target, e) {
-        e.preventDefault();
-        target = $(target);
-        var tweetUrl = getVideoUrl(target);
-        openTweetPopup(tweetUrl);
-
-        var contextly_url = getContextlyUrl(target);
-        Contextly.MainServerAjaxClient.call(contextly_url);
-      }
-
       $("a[rel='ctx-video-dataurl']").click(this.proxy(onVideoLinkClick, true, true));
-      $("a[rel='ctx-tweet-dataurl']").click(this.proxy(onTweetLinkClick, true, true));
 
       function getVideoClass() {
         return "ctx-video-modal";
@@ -125,11 +115,6 @@
         showVideoPopup();
       }
 
-      function openTweetPopup(ctxVideoUrl) {
-        $('body').append(createTweetTmp(ctxVideoUrl));
-        showVideoPopup();
-      }
-
       function showVideoPopup() {
         modalFadeIn(getVideoClass());
         modalFadeIn(videoOverlay());
@@ -157,18 +142,8 @@
           '<a  href="#" class="ctx-video-close">&#215;</a>' +
           '<div class="ctx-modal-social">' + facebookLike(ctxVideoUrl) + twitterIframe(videoId, videoTitle) + '</div>' +
           '</div>' +
-          '<div class="' + videoOverlay() + '" /></div>';
+          '<div class="' + videoOverlay() + '"></div>';
         return videotmp;
-      }
-
-      function createTweetTmp(tweetUrl) {
-        return '<div class="' + getVideoClass() + '">' +
-          '<div class="ctx-video-frame"><blockquote class="twitter-tweet" width="700px"><a href="' + encodeURI(tweetUrl) + '"></a>' +
-          '<div class="ctx-video-loading" ></div></blockquote></div>' +
-          '<script src="//platform.twitter.com/widgets.js" charset="utf-8"></script>' +
-          '<a  href="#" class="ctx-video-close">&#215;</a>' +
-          '</div>' +
-          '<div class="' + videoOverlay() + '" /></div>';
       }
 
       function facebookLike(ctxVideoUrl) {
@@ -230,24 +205,135 @@
       }
     },
 
-    loadCss: function(contextly_id) {
-      var css_url = this.getWidgetCSSUrl();
+    queueTweetsRendering: function() {
+      twttr.ready(this.proxy(this.renderTweets));
+    },
 
-      Contextly.Utils.loadCssFile(css_url, contextly_id);
-
-      // Make needed css rules and load custom widget css
-      var custom_css = this.getCustomCssCode();
-      if (custom_css) {
-        Contextly.Utils.loadCustomCssCode(custom_css, this.getWidgetType() + '-custom');
+    renderTweets: function() {
+      var tweetLinks = this.getWidgetContainers()
+        .find('.ctx-link[data-tweet-id]');
+      if (!tweetLinks.length) {
+        return;
       }
+
+      // Bind tweet click events using jQuery as soon as the tweet rendering is
+      // complete, because twitter doesn't provide events here.
+      this.bindTwitterEvent('rendered', this.bindTweetClicks);
+
+      // The rest events are provided by Twitter.
+      var types = ['click', 'tweet', 'follow', 'retweet', 'favorite'];
+      this.each(types, function(eventName) {
+        this.bindTwitterEvent(eventName, this.logTwitterEvent);
+      });
+
+      this.eachElement(tweetLinks, this.renderTweet);
     },
 
-    getWidgetCSSUrl: function() {
-      return Contextly.Settings.getSnippetCssUrl(this.getSettings());
+    renderTweet: function(element) {
+      // Cleanup the element content and mark section with special class.
+      var a = element.find('a[rel="ctx-tweet-dataurl"]:first');
+      var nativeUrl = a.attr('href');
+      var contextlyUrl = a.attr('contextly-url');
+      element
+        .attr('data-native-url', nativeUrl)
+        .attr('data-contextly-url', contextlyUrl)
+        .empty()
+        .addClass('ctx-tweet');
+      element
+        .parents('.ctx-section:first')
+        .not('.ctx-social-section')
+        .addClass('ctx-social-section');
+
+      var id = element.attr('data-tweet-id');
+      twttr.widgets.createTweet(id, element[0], {
+        cards: 'hidden',
+        conversation: 'none'
+      });
     },
 
-    getCustomCssCode: function() {
-      return Contextly.CssCustomBuilder.buildCSS('.ctx-module-container', this.getSettings());
+    bindTwitterEvent: function(type, callback) {
+      twttr.events.bind(type, this.proxy(function(e) {
+        var link = $(e.target).parents('.ctx-link.ctx-tweet:first');
+        if (!link.length) {
+          return;
+        }
+
+        callback.call(this, e, link);
+      }, false, true));
+    },
+
+    bindTweetClicks: function(e) {
+      $(e.target)
+        .contents()
+        .find('blockquote.tweet')
+        .bind('click', this.proxy(this.onTweetClick, true, true));
+    },
+
+    onTweetClick: function(blockquote, e) {
+      var targetSelector = 'a[data-scribe^="element:"]';
+      var target = $(e.target);
+      if (!target.is(targetSelector)) {
+        target = target.parents(targetSelector + ':first');
+        if (!target.length) {
+          return;
+        }
+      }
+
+      var tweetId = $(blockquote).attr('data-tweet-id');
+      if (!tweetId) {
+        return;
+      }
+
+      var attrValue = Contextly.Utils.escapeSizzleAttrValue(tweetId);
+      var link = this.getWidgetContainers()
+        .find('.ctx-link.ctx-tweet[data-tweet-id="' + attrValue + '"]:first');
+      if (!link.length) {
+        return;
+      }
+
+      var scribeType = target.attr('data-scribe')
+        .replace(/^element:/, '');
+      if ($.inArray(scribeType, ['reply', 'retweet', 'favorite']) !== -1) {
+        // These types are handled through native Twitter events.
+        return;
+      }
+
+      var href = target.attr('href');
+      if (scribeType === 'url') {
+        var expandedUrl = target.attr('data-expanded-url');
+
+        if (expandedUrl) {
+          // Use expanded rather than shortened URL on the events log.
+          href = expandedUrl;
+
+          // On the target URL we should send a request to the main server and
+          // exit.
+          var nativeUrl = link.attr('data-native-url');
+          if (expandedUrl.toLowerCase() === nativeUrl.toLowerCase()) {
+            var contextlyUrl = link.attr('data-contextly-url');
+            Contextly.MainServerAjaxClient.call(contextlyUrl);
+            return;
+          }
+        }
+      }
+
+      Contextly.EventsLogger.tweetEvent('link', {
+        event_element: scribeType,
+        event_tweet_id: tweetId,
+        event_url: href
+      });
+    },
+
+    logTwitterEvent: function(e, link) {
+      var tweetId = link.attr('data-tweet-id');
+      if (!tweetId) {
+        return;
+      }
+
+      Contextly.EventsLogger.tweetEvent(e.type, {
+        event_element: e.region,
+        event_tweet_id: tweetId
+      });
     },
 
     getImageDimension: function() {
@@ -277,18 +363,6 @@
     getImagesWidth: function() {
       var image_dimension = this.getImageDimension();
       return image_dimension.width;
-    },
-
-    getWidget: function() {
-      return this.widget;
-    },
-
-    getWidgetType: function() {
-      return this.widget_type;
-    },
-
-    getSettings: function() {
-      return this.getWidget().settings;
     },
 
     getWidgetLinks: function() {
@@ -327,9 +401,9 @@
 
     getLinkIcon: function(link) {
       if (link.video) {
-        return '<span class="ctx-video-icon"></span>';
+        return '<span class="ctx-icon ctx-icon-video"></span>';
       } else if (link.tweet) {
-        return '<span class="ctx-tweet-icon"><img src="//abs.twimg.com/favicons/favicon.ico"></span>';
+        return '<span class="ctx-icon ctx-icon-twitter"></span>';
       }
       return '';
     },
@@ -343,7 +417,7 @@
       var settings = this.getSettings();
       var html = " onmousedown=\"";
 
-      if (!link.video && !link.tweet) {
+      if (!link.video) {
           html += "this.href='" + this.escape(link.url) + "';"
       }
 
@@ -364,27 +438,18 @@
         content + "</a>";
     },
 
-    getModuleLinkIcon: function(link) {
-        if (this.getModuleType() == Contextly.widget.styles.TEXT) {
-            return this.getLinkIcon(link);
-        }
-        else {
-            return '';
-        }
-    },
-
     getVideoLinkATag: function(link, content) {
       return "<a rel=\"ctx-video-dataurl\" class='ctx-clearfix ctx-nodefs' href=\"" +
         this.escape(link.native_url) + "\" title=\"" +
         this.escape(link.title) + "\" contextly-url=\"" + link.url + "\" " +
-        this.getEventTrackingHtml(link) + ">" + this.getModuleLinkIcon(link) + " " + content + "</a>";
+        this.getEventTrackingHtml(link) + ">" + content + "</a>";
     },
 
     getTweetLinkATag: function(link, content) {
       return "<a rel=\"ctx-tweet-dataurl\" class='ctx-clearfix ctx-nodefs' href=\"" +
         this.escape(link.native_url) + "\" title=\"" +
         this.escape(link.title) + "\" contextly-url=\"" + link.url + "\" " +
-        this.getEventTrackingHtml(link) + ">" + this.getModuleLinkIcon(link) + " " + content + "</a>";
+        this.getEventTrackingHtml(link) + ">" + content + "</a>";
     },
 
     getTrackLinkJSHtml: function(link) {
@@ -427,213 +492,225 @@
     },
 
     getBrandingButtonHtml: function () {
+      if (!this.isDisplayContextlyLogo()) {
+        return '';
+      }
+
       var div = "<div class='ctx-branding ctx-clearfix'>";
-      div += "<a href='https://contextly.com' id='ctx-branding-link' class='ctx-nodefs'>Powered by</a>";
+      div += "<a href='https://contextly.com' class='ctx-branding-link ctx-nodefs'>Powered by</a>";
       div += "</div>";
       return div;
     },
 
-    setResponsiveFunction: function() {
-
-      function ctxResponsiveResizeHandler() {
-        // Blocks2
-        var mobileModule = 400;
-        var normalModule = 650;
-        var wideModule = 790;
-
-        // Float
-        var mobileModuleFl = 240;
-        var mediumModuleFl = 400;
-        var normalModuleFl = 700;
-
-        // Blocks
-        var mobileModuleBl = 200;
-        var tabletModuleBl = 450;
-        var normalModuleBl = 650;
-        var wideModuleBl = 790;
-
-        // Text
-        var mobileModuleTx = 450;
-
-        function getBlocks2Width() {
-          var width = $(".ctx-content-block2").width();
-          return width;
-        }
-
-        function getFloatWidth() {
-          var width = $(".ctx-content-float").width();
-          return width;
-        }
-
-        function getTextWidth() {
-          var width = $(".ctx-content-text").width();
-          return width;
-        }
-
-        function getScreenWidth() {
-          var getwidth = $(window).width();
-          return getwidth;
-        }
-
-        function getWidgetType() {
-          var widgetType = $("#ctx-module").attr("widget-type");
-          return widgetType;
-        }
-
-        function extraLinksAction(linkNumberArray, linkCondition) {
-
-          if (linkCondition == "show") {
-            var dispCond = "block";
-            var visCond = "visible";
-          }
-          else if (linkCondition == "hide") {
-            var dispCond = "none";
-            var visCond = "hidden";
-          }
-
-          for ( var i = 0; i < linkNumberArray.length; i++ ) {
-            var link_pos = linkNumberArray[i];
-            $(".ctx-link-additional-" + link_pos).css("display", dispCond).css("visibility", visCond);
-          }
-        }
-
-        function respClassChanger(respClass, baseClass) {
-          $("." + baseClass).attr("class", baseClass + " ctx-nodefs " + respClass);
-        }
-
-        // Blocks
-        if (getWidgetType() == 'blocks') {
-          if (getBlocksWidth() < mobileModuleBl) {
-            respClassChanger("ctx-module-mobile", "ctx-content-block");
-            extraLinksAction([5, 6], "hide");
-          }
-          else if (getBlocksWidth() <= tabletModuleBl && getBlocksWidth() >= mobileModuleBl) {
-            respClassChanger("ctx-module-tablet", "ctx-content-block");
-            extraLinksAction([5, 6], "hide");
-          }
-          else if (getBlocksWidth() <= normalModuleBl && getBlocksWidth() >= tabletModuleBl) {
-            extraLinksAction([5, 6], "hide");
-            respClassChanger("ctx-module-default", "ctx-content-block");
-          }
-          else if (getBlocksWidth() > normalModuleBl && getBlocksWidth() <= wideModuleBl) {
-            respClassChanger("ctx-module-sec5", "ctx-content-block");
-            extraLinksAction([6], "hide");
-            extraLinksAction([5], "show");
-          }
-          else if (getBlocksWidth() > wideModuleBl) {
-            respClassChanger("ctx-module-sec6", "ctx-content-block");
-            extraLinksAction([5, 6], "show");
-          }
-        }
-
-        // Blocks2
-        if (getWidgetType() == 'blocks2') {
-          if (getBlocks2Width() < mobileModule) {
-            extraLinksAction([5, 6], "hide");
-            respClassChanger("ctx-module-mobile", "ctx-content-block2");
-          }
-          else if (getBlocks2Width() <= normalModule && getBlocks2Width() >= mobileModule) {
-            extraLinksAction([5, 6], "hide");
-            respClassChanger("ctx-module-default", "ctx-content-block2");
-          }
-          else if (getBlocks2Width() > normalModule && getBlocks2Width() <= wideModule) {
-            extraLinksAction([6], "hide");
-            extraLinksAction([5], "show");
-            respClassChanger("ctx-module-sec5", "ctx-content-block2");
-          }
-          else if (getBlocks2Width() > wideModule) {
-            respClassChanger("ctx-module-sec6", "ctx-content-block2");
-            extraLinksAction([5, 6], "show");
-          }
-        }
-
-        // Float
-        if (getWidgetType() == 'float') {
-          if (getFloatWidth() < mobileModuleFl) {
-            extraLinksAction([4, 5, 6], "hide");
-            respClassChanger("ctx-module-mobile", "ctx-content-float");
-          }
-          else if (getFloatWidth() <= mediumModuleFl && getFloatWidth() >= mobileModuleFl) {
-            extraLinksAction([4, 5, 6], "hide");
-            respClassChanger("ctx-module-medium", "ctx-content-float");
-          }
-          else if (getFloatWidth() > mediumModuleFl && getFloatWidth() <= normalModuleFl) {
-            extraLinksAction([4, 5, 6], "hide");
-            respClassChanger("ctx-module-normal", "ctx-content-float");
-          }
-          else if (getFloatWidth() > normalModuleFl) {
-            extraLinksAction([5, 6], "hide");
-            extraLinksAction([4], "show");
-            respClassChanger("ctx-module-wide", "ctx-content-float");
-          }
-        }
-
-        // Text
-        if (getTextWidth() < mobileModuleTx) {
-          respClassChanger("ctx-module-mobile", "ctx-content-text");
-        }
-        else if (getTextWidth() >= mobileModuleTx) {
-          respClassChanger("ctx-module-default", "ctx-content-text");
-        }
+    attachBrandingHandlers: function() {
+      if (!this.isDisplayContextlyLogo()) {
+        return;
       }
 
-      var slideMinHeightBl = 54;
+      this.getWidgetContainers()
+        .find(".ctx-branding-link")
+        .click(function(event) {
+          event.preventDefault();
+          Contextly.overlay.Branding.open();
+        });
+    },
 
-      function getBlocksWidth() {
-        var width = $(".ctx-content-block").width();
-        return width;
+    getWidgetElements: function() {
+      if (this.widget_elements === null) {
+        this.widget_elements = this.getWidgetContainers()
+          .find('.' + this.getWidgetStyleClass());
       }
 
-      function getSliderContentBl(classname) {
-        return $(".ctx-link .ctx-link-title");
+      return this.widget_elements;
+    },
+
+    getLayoutModes: function() {
+      return {};
+    },
+
+    setUpResponsiveLayout: function() {
+      if (Contextly.Utils.isEmptyObject(this.getLayoutModes())) {
+        return;
       }
 
-      if (getBlocksWidth() >= 450) {
-        getSliderContentBl().css("height", slideMinHeightBl);
+      this.checkLayoutThresholds();
 
-        $('.ctx-links-content .ctx-link a').hover(
-          function() {
-            $(this).addClass('ctx-blocks-slider');
-            var getTextHeight = $(".ctx-blocks-slider .ctx-link-title p").height();
-            if (getTextHeight > 59) {
-              $(".ctx-blocks-slider .ctx-link-title").stop(true, true).animate({
-                height: getTextHeight + 10
-              }, 200);
-            }
-          },
-          function() {
-            $(".ctx-blocks-slider .ctx-link-title").stop(true, true).animate({
-              height: slideMinHeightBl
-            }, 200);
-            $(this).removeClass('ctx-blocks-slider');
+      var checkCount = 0;
+      var interval = setInterval(this.proxy(function() {
+        checkCount++;
+        if (checkCount > 5) {
+          clearInterval(interval);
+        }
+
+        this.checkLayoutThresholds();
+      }), 500);
+
+      $(window)
+        .resize(this.proxy(this.checkLayoutThresholds))
+        .load(this.proxy(function() {
+          clearInterval(interval);
+          this.checkLayoutThresholds();
+        }));
+    },
+
+    sizeMatchesThresholds: function(size, thresholds) {
+      return (size >= thresholds[0] && (!thresholds[1] || size < thresholds[1]));
+    },
+
+    checkLayoutThresholds: function() {
+      var modes = this.getLayoutModes();
+      var elements = this.getWidgetElements();
+      this.eachElement(elements, function(element) {
+        this.each(modes, function(thresholds, name) {
+          if (this.sizeMatchesThresholds(element.width(), thresholds)) {
+            this.setLayoutMode(element, name);
+            return false;
           }
-        )
-      }
-
-      /* Branding Popup */
-      $("#ctx-branding-link").click(function(event) {
-        event.preventDefault();
-        Contextly.overlay.Branding.open();
+        });
       });
+    },
 
-      ctxResponsiveResizeHandler();
+    buildLayoutClass: function(mode) {
+      return 'ctx-' + mode;
+    },
 
-      $(window).resize(function() {
-        ctxResponsiveResizeHandler();
-      });
+    setLayoutMode: function(element, mode) {
+      var key = 'ctxLayoutMode';
+      var lastMode = element.data(key);
 
-      var documentLoadInterval = null;
-      var documentLoadCheckCount = 0;
+      if (mode === lastMode) {
+        // Nothing to do.
+        return;
+      }
 
-      documentLoadInterval = window.setInterval(function() {
-        documentLoadCheckCount++;
+      // Be silent on the first time.
+      var firstTime = (lastMode == null);
 
-        ctxResponsiveResizeHandler();
+      if (!firstTime) {
+        element.removeClass(this.buildLayoutClass(lastMode));
+      }
 
-        if (documentLoadCheckCount > 5) {
-          clearInterval(documentLoadInterval);
+      element.data(key, mode);
+      element.addClass(this.buildLayoutClass(mode));
+
+      if (!firstTime) {
+        this.broadcast(Contextly.widget.broadcastTypes.LAYOUT_CHANGED, mode);
+      }
+    },
+
+    attachWidgetViewHandler: function() {
+      // TODO Replace polling with browser events monitoring.
+      this.resumeWidgetViewPolling();
+
+      // Use page visibility API to poll on active page only.
+      var hidden, event;
+      if ((hidden = 'hidden') in document) {
+        event = "visibilitychange";
+      }
+      else if ((hidden = "mozHidden") in document) {
+        event = "mozvisibilitychange";
+      }
+      else if ((hidden = "webkitHidden") in document) {
+        event = "webkitvisibilitychange";
+      }
+      else {
+        return;
+      }
+
+      event = this.nsEvent(event);
+      this.document_hidden_property = hidden;
+      this.document_visibility_event = event;
+      $(document).bind(event, this.proxy(this.onPageVisibilityChange));
+    },
+
+    detachWidgetViewHandler: function() {
+      this.pauseWidgetViewPolling();
+
+      if (this.document_visibility_event != null) {
+        $(document).unbind(this.document_visibility_event);
+      }
+    },
+
+    onPageVisibilityChange: function() {
+      var hidden = this.document_hidden_property;
+      if (hidden == null) {
+        return;
+      }
+
+      if (document[hidden]) {
+        this.pauseWidgetViewPolling();
+      }
+      else {
+        this.resumeWidgetViewPolling();
+      }
+    },
+
+    pauseWidgetViewPolling: function() {
+      if (this.module_view_interval != null) {
+        clearInterval(this.module_view_interval);
+        this.module_view_interval = null;
+      }
+    },
+
+    resumeWidgetViewPolling: function() {
+      this.module_view_interval = window.setInterval(this.proxy(this.checkWidgetVisibility), 300);
+    },
+
+    getFirstLinkElement: function(index, widgetElement) {
+      if (this.first_link_elements[index] == null) {
+        this.first_link_elements[index] = widgetElement.find('.ctx-section .ctx-link:first');
+      }
+
+      return this.first_link_elements[index];
+    },
+
+    getViewport: function() {
+      var win = $(window);
+
+      var viewport = {
+        top : win.scrollTop(),
+        left : win.scrollLeft()
+      };
+      viewport.right = viewport.left + win.width();
+      viewport.bottom = viewport.top + win.height();
+      return viewport;
+    },
+
+    isElementInsideViewport: function(el, viewport) {
+      var bounds = el.offset();
+      bounds.right = bounds.left + el.outerWidth();
+      bounds.bottom = bounds.top + el.outerHeight();
+
+      var isOutsideViewport = (
+        viewport.right < bounds.left
+          || viewport.left > bounds.right
+          || viewport.bottom < bounds.top
+          || viewport.top > bounds.bottom
+        );
+
+      return !isOutsideViewport;
+    },
+
+    checkWidgetVisibility: function() {
+      var viewport = this.getViewport();
+      var elements = this.getWidgetElements();
+      this.eachElement(elements, function(element, index) {
+        var firstLink = this.getFirstLinkElement(index, element);
+        if (this.isElementInsideViewport(firstLink, viewport)) {
+          var guid = Contextly.Visitor.getGuid();
+          if (guid != null) {
+            Contextly.EventsLogger.logEvent(Contextly.widget.eventNames.MODULE_VIEW, {
+              event_guid: guid
+            });
+          }
+
+          this.detachWidgetViewHandler();
+          this.broadcast(Contextly.widget.broadcastTypes.IN_VIEWPORT);
+
+          // No reasons to continue the loop.
+          return false;
         }
-      }, 500);
+      });
     }
 
   });

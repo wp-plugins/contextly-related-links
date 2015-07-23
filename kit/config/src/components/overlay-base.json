@@ -2,7 +2,8 @@
   "include": [
     "libraries/jquery",
     "components/create-class",
-    "components/proxy"
+    "components/proxy",
+    "components/transmitter"
   ],
 
   "base": "components/overlay/base",

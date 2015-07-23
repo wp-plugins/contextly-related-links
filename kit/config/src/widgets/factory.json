@@ -1,0 +1,58 @@
+{
+  "include": [
+    "libraries/twitter-wjs",
+    "components/settings",
+    "components/proxy",
+    "components/api-client",
+    "components/main-server-client",
+    "components/utils",
+    "components/events",
+    "components/overlay-base",
+    "components/color",
+    "components/assets-manager"
+  ],
+  "expose": [
+    "widgets/sidebar/default",
+    "widgets/snippet/default",
+    "widgets/snippet/blocks",
+    "widgets/snippet/blocks2",
+    "widgets/snippet/float",
+    "widgets/storyline/button",
+    "widgets/storyline/split-button",
+    "widgets/storyline/transparent"
+  ],
+
+  "base": "widgets",
+  "js": [
+    "js/base-widget",
+    "js/base-css",
+    "js/base-links-list-widget",
+    "js/text-widget",
+    "js/text-css",
+    "js/base-blocks-widget",
+    "js/blocks-widget",
+    "js/blocks-css",
+    "js/blocks2-widget",
+    "js/blocks2-css",
+    "js/float-widget",
+    "js/float-css",
+    "js/sidebar-widget",
+    "js/sidebar-css",
+    "js/storyline-widget",
+    "js/storyline-css",
+    "js/storyline-overlay",
+    "js/branding-overlay",
+    "js/page-events",
+    "js/factory"
+  ],
+  "css": [
+    "css/common",
+    "css/icons",
+    "css/video",
+    "css/branding"
+  ],
+  "media": [
+    "fonts",
+    "img"
+  ]
+}
