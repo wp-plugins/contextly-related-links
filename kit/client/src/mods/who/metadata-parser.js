@@ -2,54 +2,30 @@
 
   /**
    * @class
-   * @extends Contextly.metadataParser.Base
+   * @extends Contextly.metadataParser.DublinCore
    */
   Contextly.metadataParser.WHO = Contextly.createClass({
 
-    extend: Contextly.metadataParser.Base,
+    extend: Contextly.metadataParser.DublinCore,
 
     statics: /** @lends Contextly.metadataParser.WHO */ {
 
-      construct: function() {
-        this.data = {};
-      },
-
-      parseData: function(key) {
-        var map = {
-          post_id: 'webit_document_id',
-          title: 'DC.title',
-          pub_date: 'DC.date.published',
-          url: 'DC.identifier'
-        };
-        if (!key in map) {
-          return null;
-        }
-
-        var value = $('meta[name="' + map[key] + '"]').attr('content');
-
-        // Add domain to the URL.
-        if (key == 'url') {
-          var location = document.location;
-          value = location.protocol + '//' + location.host + value;
-        }
-
-        return value;
+      getPropertiesMap: function() {
+        var map = Contextly.metadataParser.DublinCore.getPropertiesMap.apply(this, arguments);
+        map.post_id = ['webit_document_id'];
+        return map;
       },
 
       dataExists: function() {
         return this.getData('post_id') != null;
-      },
-
-      getData: function(key) {
-        if (typeof this.data[key] === 'undefined') {
-          this.data[key] = this.parseData(key);
-        }
-
-        return this.data[key];
       }
 
     }
 
   });
+
+  // Erase the rest formats from the detection list.
+  Contextly.metadataFormats = {};
+  Contextly.metadataFormats['WHO'] = Contextly.metadataParser.WHO;
 
 })(jQuery);

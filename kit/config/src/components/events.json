@@ -1,12 +1,13 @@
 {
-    "include": [
-      "libraries/jquery",
-      "components/create-class",
-      "components/api-client"
-    ],
+  "include": [
+    "libraries/jquery",
+    "libraries/easy-xdm",
+    "components/create-class",
+    "components/api-client"
+  ],
 
-    "base": "components",
-    "js": [
-        "events"
-    ]
+  "base": "components",
+  "js": [
+    "events"
+  ]
 }

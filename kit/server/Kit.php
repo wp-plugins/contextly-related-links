@@ -20,8 +20,9 @@
  * @method ContextlyKitAssetsConfigAggregated newAssetsConfigAggregated()
  * @method ContextlyKitAssetsList newAssetsList()
  * @method ContextlyKitAssetsHtmlRenderer newAssetsHtmlRenderer()
+ * @method ContextlyKitDataManager newDataManager()
  * @method ContextlyKitException newException()
- * @method ContextlyKitConsolePackagerCommand newConsolePackagerCommand()
+ * @method ContextlyKitExposedAssetsManager newExposedAssetsManager()
  * @method ContextlyKitExecCommand newExecCommand()
  * @method ContextlyKitExecResult newExecResult()
  * @method ContextlyKitPackageArchiver newPackageArchiver()
@@ -30,6 +31,7 @@
  * @method ContextlyKitPackageUploader newPackageUploader()
  * @method ContextlyKitPackageMediaAggregator newPackageMediaAggregator()
  * @method ContextlyKitPackageTemplatesAggregator newPackageTemplatesAggregator()
+ * @method ContextlyKitPackageInlineJsAggregator newPackageInlineJsAggregator()
  * @method ContextlyKitPackageJsAggregator newPackageJsAggregator()
  * @method ContextlyKitPackageCssAggregator newPackageCssAggregator()
  * @method ContextlyKitOverlayDialog newOverlayDialog()
@@ -39,10 +41,13 @@
  */
 class ContextlyKit {
 
-  /**
-   * @var null|string
-   */
-  protected static $version;
+  const CDN_SAME = 'same';
+  const CDN_BRANCH = 'branch';
+  const CDN_LATEST = 'latest';
+
+  const MODE_LIVE = 'live';
+  const MODE_DEV = 'dev';
+  const MODE_PKG = 'pkg';
 
   /**
    * Path of the Kit root.
@@ -75,27 +80,65 @@ class ContextlyKit {
     spl_autoload_register(array(__CLASS__, 'autoload'));
   }
 
-  public static function version() {
-    if (!isset(self::$version)) {
-      $path = self::getRootPath() . '/version';
-      if (!file_exists($path)) {
-        self::$version = 'dev';
-      }
-      else {
-        self::$version = trim(file_get_contents($path));
-      }
-    }
-
-    return self::$version;
-  }
-
   /**
    * @var ContextlyKitSettings
    */
   protected $settings;
 
+  /**
+   * @var array
+   */
+  protected $urls;
+
+  /**
+   * @var string
+   */
+  protected $cdnVersion;
+
+  /**
+   * @var string
+   */
+  protected $version;
+
   function __construct($settings) {
     $this->settings = $settings;
+  }
+
+  public function version() {
+    if (!isset($this->version)) {
+      if ($this->isPackagerMode()) {
+        $this->version = $this->settings->version;
+      }
+      else {
+        $path = $this->getRootPath() . '/version';
+        if (!file_exists($path)) {
+          $this->version = 'dev';
+        }
+        else {
+          $this->version = trim(file_get_contents($path));
+        }
+      }
+    }
+
+    return $this->version;
+  }
+
+  /**
+   * Parses version into an array with major, minor versions and suffix.
+   *
+   * @param string $version
+   *
+   * @return array|null
+   *   Array with zero-based numeric indexes or NULL in case the version doesn't
+   *   match the format.
+   */
+  public static function parseVersion($version) {
+    if (preg_match('/^(\d+)\.(\d+)\.?(.*)$/', $version, $matches)) {
+      return array($matches[1], $matches[2], $matches[3]);
+    }
+    else {
+      return NULL;
+    }
   }
 
   /**
@@ -109,12 +152,35 @@ class ContextlyKit {
    */
   function buildAssetUrl($filepath) {
     if ($this->isCdnEnabled()) {
-      // TODO Avoid hard-coding "kit/assets" path.
-      return $this->getServerUrl('cdn') . 'kit/assets/' . self::version() . '/' . $filepath;
+      return $this->getServerUrl('cdn') . $this->getCdnVersion() . '/' . $filepath;
     }
     else {
       return $this->buildFileUrl($this->getFolderPath('client') . '/' . $filepath);
     }
+  }
+
+  public function buildCdnVersion($cdn, $version) {
+    switch ($cdn) {
+      case self::CDN_LATEST:
+        return 'latest';
+
+      case self::CDN_BRANCH:
+        if ($parsed = $this->parseVersion($version)) {
+          return $parsed[0] . '.latest';
+        }
+        // no break;
+
+      default:
+        return $version;
+    }
+  }
+
+  public function getCdnVersion() {
+    if (!isset($this->cdnVersion)) {
+      $this->cdnVersion = $this->buildCdnVersion($this->settings->cdn, $this->version());
+    }
+
+    return $this->cdnVersion;
   }
 
   /**
@@ -141,6 +207,21 @@ class ContextlyKit {
 
   function escapeHTML($text) {
     return htmlspecialchars($text, ENT_QUOTES, 'UTF-8');
+  }
+
+  function exportJsValue($value, $escapeHtml = TRUE) {
+    if ($escapeHtml) {
+      if (version_compare(PHP_VERSION, '5.3.0', '<')) {
+        throw $this->newException('PHP version 5.3.0+ is required to properly encode JS value.');
+      }
+
+      $flags = JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT;
+    }
+    else {
+      $flags = 0;
+    }
+
+    return json_encode($value, $flags);
   }
 
   function getSettings() {
@@ -170,31 +251,20 @@ class ContextlyKit {
   }
 
   function isCdnEnabled() {
-    return !$this->isDevMode() && $this->settings->cdn;
+    return !$this->isDevMode() && !empty($this->settings->cdn);
   }
 
   protected function getServerUrls() {
-    return array(
-      'cdn' => array(
-        'http' => 'http://contextlysitescripts.contextly.com/',
-        'https' => 'https://c714015.ssl.cf2.rackcdn.com/',
-      ),
-      'main' => array(
-        'dev' => 'http://dev.contextly.com/',
-        'live' => 'http://contextly.com/',
-      ),
-      'cp' => array(
-        'dev' => 'https://dev.contextly.com/',
-        'live' => 'https://contextly.com/',
-      ),
-      'api' => array(
-        'dev' => 'http://devrest.contextly.com/',
-        'live' => array(
-          'http' => 'http://rest.contextly.com/',
-          'https' => 'https://rest.contextly.com/',
-        ),
-      ),
-    );
+    if (!isset($this->urls)) {
+      // Use data files directly and force source folder to properly get it when
+      // in live mode.
+      $path = $this->getFolderPath('client/src/data', TRUE) . '/urls.json';
+      $data = $this->newDataManager(array('urls' => $path))
+        ->parse();
+      $this->urls = $data['urls'] ? $data['urls'] : array();
+    }
+
+    return $this->urls;
   }
 
   function getServerUrl($serverType) {
@@ -215,7 +285,14 @@ class ContextlyKit {
       foreach ($keys as $key) {
         if (isset($serverUrls[$key])) {
           if (is_string($serverUrls[$key])) {
-            return $serverUrls[$key];
+            // URL found, add protocol if necessary.
+            $url = $serverUrls[$key];
+
+            if (substr($url, 0, 2) === '//') {
+              $url = ($this->isHttps() ? 'https' : 'http') . ':' . $url;
+            }
+
+            return $url;
           }
           else {
             $serverUrls = $serverUrls[$key];
@@ -348,13 +425,27 @@ class ContextlyKitSettings {
   public $mode = 'live';
 
   /**
-   * Whether to use CDN for resources or not.
+   * Controls version of assets loaded from the CDN.
    *
-   * Is only used on the "live" mode.
+   * Affects live mode only. Possible values controls which assets to use:
+   * - empty value: local assets
+   * - 'same': CDN assets of the same version
+   * - 'branch': latest CDN assets of the same major branch, recommended
+   * - 'latest': latest CDN assets from last branch, may cause compatibility
+   *   issues and is not recommended
    *
-   * @var bool
+   * @var bool|string
    */
-  public $cdn = TRUE;
+  public $cdn = ContextlyKit::CDN_BRANCH;
+
+  /**
+   * Kit version for packaging.
+   *
+   * Is only taken into account on 'pkg' mode, ignored on the rest modes.
+   *
+   * @var string
+   */
+  public $version = 'dev';
 
   /**
    * Contextly application ID.
@@ -381,6 +472,20 @@ class ContextlyKitSettings {
 	 * @var string|null
 	 */
 	public $urlPrefix = NULL;
+
+  /**
+   * Client short name.
+   *
+   * @var string|null
+   */
+  public $client = NULL;
+
+  /**
+   * Version of the client.
+   *
+   * @var string|null
+   */
+  public $clientVersion = NULL;
 
 }
 

@@ -37,12 +37,7 @@ Contextly.createClass = function (data) {
   for (var i = 0; i < extend.length; i++) {
     var parent = extend[i];
 
-    // static constructor
-    if (typeof parent.construct == "function") {
-      parent.construct.call(constructor);
-    }
-
-    // copy static methods
+    // Copy static methods, except for static constructor.
     for (var p in parent) {
       // copy only functions
       if (typeof parent[p] != "function" || p == "construct") {
@@ -51,7 +46,7 @@ Contextly.createClass = function (data) {
       constructor[p] = parent[p];
     }
 
-    // Copy prototype methods
+    // Copy prototype methods.
     for (var p in parent.prototype) {
       if (typeof parent.prototype[p] != "function" || p == "constructor") {
         continue;
@@ -113,9 +108,27 @@ Contextly.createClass = function (data) {
     constructor[p] = statics[p];
   }
 
-  // static constructor
-  if (typeof statics.construct == "function") {
-    statics.construct.call(constructor);
+  // Build static constructor from parents' constructors if there is no own one.
+  if (typeof constructor.construct === 'undefined' && extend.length) {
+    var parentStaticConstructors = [];
+    for (var i = 0; i < extend.length; i++) {
+      var parent = extend[i];
+      if (typeof parent.construct == "function") {
+        parentStaticConstructors.push(parent.construct);
+      }
+    }
+    if (parentStaticConstructors.length) {
+      constructor.construct = function() {
+        for (var i = 0; i < parentStaticConstructors.length; i++) {
+          parentStaticConstructors[i].call(this);
+        }
+      };
+    }
+  }
+
+  // Call current class static constructor, if any...
+  if (typeof constructor.construct == "function") {
+    constructor.construct.call(constructor);
   }
 
   // proto.constructor = constructor;

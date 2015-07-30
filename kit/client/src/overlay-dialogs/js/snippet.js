@@ -48,7 +48,7 @@
     },
 
     getSectionLinksContainer: function(sectionName) {
-      var selector = '.section[data-section-name="' + this.escapeSizzleAttrValue(sectionName) + '"]';
+      var selector = '.section[data-section-name="' + Contextly.Utils.escapeSizzleAttrValue(sectionName) + '"]';
       var section = this.e.sections.find(selector);
 
       if (!section.size()) {

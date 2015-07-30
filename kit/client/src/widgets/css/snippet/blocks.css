@@ -1,0 +1,200 @@
+.ctx-content-block {
+	width: 100% !important;
+	margin: 5px 0 !important;
+	float: none !important;
+  clear: both !important;
+}
+.ctx-content-block .ctx-sections-container {
+	padding: 0 !important;
+  border-width: 0 0 1px 0 !important;
+  border-style: solid !important;
+  border-color: #e3e3e3;
+  margin: 0 0 5px 0 !important;
+}
+.ctx-content-block .ctx-section {
+	width: 100% !important;
+	float: none !important;
+  padding: 0 !important;
+  overflow: hidden !important; /* Force new block formatting context */
+  border-width: 1px 0 0 0 !important;
+  border-style: solid !important;
+  border-color: #e3e3e3;
+}
+.ctx-content-block .ctx-links-header p {
+	line-height: normal !important;
+  text-align: center !important;
+  font-weight: bold !important;
+  margin: 0.7em 0 !important;
+	color: #6d6d6d;
+	font-size: 19px;
+	font-family: Gotham, "Helvetica Neue", Helvetica, Arial, sans-serif
+}
+.ctx-content-block .ctx-links-content {
+	width: 100%;
+  text-align: center !important;
+  margin: 10px 0 20px 0 !important;
+}
+.ctx-content-block .ctx-links-content:first-child {
+  margin-top: 20px !important;
+}
+.ctx-content-block .ctx-link {
+	max-width: 150px !important;
+	display: inline-block !important;
+  vertical-align: middle !important;
+  text-align: left !important;
+}
+.ctx-content-block .ctx-link.ctx-tweet {
+  max-width: 320px !important;
+  min-height: 1px !important;
+}
+.ctx-content-block .ctx-link-image img {
+	max-width: 100% !important;
+	float: left !important
+}
+.ctx-content-block .ctx-link a {
+	display: block !important;
+	position: relative !important;
+	text-decoration: none !important;
+	overflow: hidden !important;
+
+	-moz-transition: box-shadow 200ms ease-in-out 0ms;
+	-webkit-transition: box-shadow 200ms ease-in-out 0ms;
+	-o-transition: box-shadow 200ms ease-in-out 0ms;
+	-ms-transition: box-shadow 200ms ease-in-out 0ms;
+	transition: box-shadow 200ms ease-in-out 0ms 0ms;
+}
+.ctx-content-block .ctx-link a:hover {
+	-webkit-box-shadow: 0 0 7px 0 rgba(50, 50, 50, 0.4);
+	-moz-box-shadow: 0 0 7px 0 rgba(50, 50, 50, 0.4);
+	box-shadow: 0 0 7px 0 rgba(50, 50, 50, 0.4);
+}
+.ctx-content-block .ctx-link-title {
+  line-height: 1.35 !important;
+	width: 100% !important;
+	position: absolute !important;
+	bottom: 0 !important;
+	padding: 0.4em 3% 0.4em 3% !important;
+  -webkit-box-sizing: border-box !important;
+  -moz-box-sizing: border-box !important;
+	box-sizing: border-box !important;
+	min-height: 4.85em !important; /* 1.35*3+0.4*2 */
+  background: #6d6d6d;
+  background: rgba(109, 109, 109, 0.85);
+  font-family: Gotham, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 13px;
+  color: #FFF;
+}
+.ctx-content-block .ctx-link-title p {
+  font-family: inherit !important;
+  font-size: inherit !important;
+  line-height: inherit !important;
+  color: inherit !important;
+  width: 100% !important;
+  max-height: 4.05em !important;
+  overflow: hidden !important;
+  -moz-word-break: break-word;
+	word-break: break-word;
+	-webkit-hyphens: auto;
+	-moz-hyphens: auto;
+	hyphens: auto;
+}
+.ctx-content-block .ctx-link.ctx-expanded .ctx-link-title p {
+  max-height: none !important;
+}
+.ctx-content-block .twitter-tweet {
+  margin: 0 !important;
+}
+/* module's styles for different sizes*/
+/* MOBILE WIDGET */
+.ctx-content-block.ctx-module-mobile .ctx-links-content {
+  margin-bottom: 2px !important;
+}
+.ctx-content-block.ctx-module-mobile .ctx-link {
+	width: 98% !important;
+	max-width: 100% !important;
+	margin: 0 1% 18px 1% !important
+}
+.ctx-content-block.ctx-module-tablet .ctx-link.ctx-tweet {
+  max-width: 100% !important;
+}
+.ctx-content-block.ctx-module-mobile .ctx-link-title {
+	width: 100% !important;
+	float: left !important;
+}
+.ctx-content-block.ctx-module-mobile .ctx-link-image {
+	width: 100% !important;
+	float: left !important;
+}
+.ctx-content-block.ctx-module-mobile .ctx-link-image img {
+	width: 100% !important;
+}
+.ctx-content-block.ctx-module-mobile .ctx-link.ctx-5,
+.ctx-content-block.ctx-module-mobile .ctx-link.ctx-6,
+.ctx-content-block.ctx-module-mobile .ctx-social-section .ctx-link.ctx-2 {
+	display: none !important
+}
+/* TABLET WIDGET */
+.ctx-content-block.ctx-module-tablet .ctx-links-content {
+  margin-bottom: 4px !important;
+}
+.ctx-content-block.ctx-module-tablet .ctx-link {
+	width: 46% !important;
+	max-width: 100% !important;
+	margin: 0 2% 16px 2% !important
+}
+.ctx-content-block.ctx-module-tablet .ctx-link.ctx-tweet {
+  width: 98% !important;
+  max-width: 100% !important;
+}
+.ctx-content-block.ctx-module-tablet .ctx-link-image {
+	width: 100% !important;
+	float: left !important;
+}
+.ctx-content-block.ctx-module-tablet .ctx-link-image img {
+	width: 100% !important;
+}
+.ctx-content-block.ctx-module-tablet .ctx-link.ctx-5,
+.ctx-content-block.ctx-module-tablet .ctx-link.ctx-6 {
+	display: none !important;
+}
+.ctx-content-block.ctx-module-tablet .ctx-social-section .ctx-link.ctx-5 {
+	display: inline-block !important;
+}
+/* DEFAULT WIDGET */
+.ctx-content-block.ctx-module-default .ctx-link {
+	width: 22% !important;
+	margin: 0 1.5% !important
+}
+.ctx-content-block.ctx-module-default .ctx-link.ctx-5,
+.ctx-content-block.ctx-module-default .ctx-link.ctx-6,
+.ctx-content-block.ctx-module-default .ctx-social-section .ctx-link.ctx-2 {
+	display: none !important
+}
+.ctx-content-block.ctx-module-default .ctx-link.ctx-tweet {
+  width: 47% !important;
+}
+/* 5 LINKS WIDGET */
+.ctx-content-block.ctx-module-sec5 .ctx-link {
+	width: 17.5% !important;
+	margin: 0 1.25% !important
+}
+.ctx-content-block.ctx-module-sec5 .ctx-link.ctx-6,
+.ctx-content-block.ctx-module-sec5 .ctx-social-section .ctx-link.ctx-2,
+.ctx-content-block.ctx-module-sec5 .ctx-social-section .ctx-link.ctx-5 {
+	display: none !important
+}
+.ctx-content-block.ctx-module-sec5 .ctx-link.ctx-tweet {
+  width: 57.5% !important;
+  max-width: none !important;
+}
+/* 6 LINKS WIDGET */
+.ctx-content-block.ctx-module-sec6 .ctx-link {
+	width: 14.6% !important;
+	margin: 0 1% !important;
+}
+.ctx-content-block.ctx-module-sec6 .ctx-link.ctx-tweet {
+  width: 31.2% !important;
+}
+.ctx-content-block.ctx-module-sec6 .ctx-social-section .ctx-link.ctx-6 {
+  display: none !important;
+}

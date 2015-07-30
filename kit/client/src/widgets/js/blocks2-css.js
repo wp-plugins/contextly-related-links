@@ -9,32 +9,49 @@ Contextly.widget.Blocks2CssCustomBuilder = Contextly.createClass({
   statics: /** @lends Contextly.widget.Blocks2CssCustomBuilder */ {
 
     buildCSS: function(entry, settings) {
-      var css_code = "";
+      var result = '';
+      var css = settings.css || {};
 
-      if (settings.css_code) {
-        css_code += Contextly.Utils.escape(settings.css_code);
+      if (css.custom_code) {
+        result += Contextly.Utils.escape(css.custom_code);
       }
 
-      if (settings.font_family) {
-        css_code += this.buildCSSRule(entry, ".ctx-content-block2 .ctx-link-title p", "font-family", settings.font_family);
+      var selector = '.ctx-content-block2 .ctx-links-header p';
+      if (css.title_font_family) {
+        result += this.buildCSSRule(entry, selector, 'font-family', css.title_font_family);
       }
-      if (settings.font_size) {
-        css_code += this.buildCSSRule(entry, ".ctx-content-block2 .ctx-link-title p", "font-size", settings.font_size);
+      if (css.title_font_size) {
+        result += this.buildCSSRule(entry, selector, 'font-size', css.title_font_size);
       }
-
-      if (settings.color_links) {
-        css_code += this.buildCSSRule(entry, ".ctx-content-block2 .ctx-link-title p", "color", settings.color_links);
-
-        var getOppositeColor = this.oppositeColorGenerator(settings.color_links);
-        css_code += this.buildCSSRule(entry, ".ctx-link-title .ctx-video-icon", "background-color", settings.color_links);
-        css_code += this.buildCSSRule(entry, ".ctx-link-title .ctx-video-icon:after", "border-left-color", getOppositeColor);
+      if (css.title_color) {
+        result += this.buildCSSRule(entry, selector, 'color', css.title_color);
       }
 
-      if (settings.color_background) {
-        css_code += this.buildCSSRule(entry, ".ctx-content-block2 .ctx-links-header", "background-color", settings.color_background);
+      selector = '.ctx-content-block2 .ctx-link-title p';
+      if (css.links_font_family) {
+        result += this.buildCSSRule(entry, selector, 'font-family', css.links_font_family);
+      }
+      if (css.links_font_size) {
+        result += this.buildCSSRule(entry, selector, 'font-size', css.links_font_size);
+      }
+      if (css.links_color) {
+        result += this.buildCSSRule(entry, selector, 'color', css.links_color);
       }
 
-      return css_code;
+      selector = [
+        '.ctx-content-block2 .ctx-sections-container',
+        '.ctx-content-block2 .ctx-section'
+      ];
+      if (css.border_color) {
+        result += this.buildCSSRule(entry, selector, 'border-color', css.border_color);
+      }
+
+      selector = '.ctx-content-block2';
+      if (css.background_color) {
+        result += this.buildCSSRule(entry, selector, 'background-color', css.background_color);
+      }
+
+      return result;
     }
 
   }

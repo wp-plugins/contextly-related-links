@@ -1,0 +1,20 @@
+{
+  "include": [
+    "libraries/jquery",
+    "libraries/webfontloader",
+
+    "components/create-class",
+    "components/proxy",
+    "components/utils",
+    "components/callback-queue",
+    "components/transmitter"
+  ],
+
+  "base": "components/assets",
+  "js": [
+    "css",
+    "font",
+    "manager"
+  ]
+
+}

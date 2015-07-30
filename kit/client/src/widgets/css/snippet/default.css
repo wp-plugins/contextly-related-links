@@ -1,0 +1,84 @@
+.ctx-content-text {
+  width: 100% !important;
+  margin: 5px 0 !important;
+  float: none !important;
+  clear: both !important;
+}
+.ctx-content-text .ctx-sections-container {
+  border-bottom-width: 1px !important;
+  border-bottom-style: solid !important;
+  border-color: #e3e3e3;
+  margin: 0 0 5px 0 !important;
+}
+.ctx-content-text .ctx-section {
+  border-top-width: 1px !important;
+  border-top-style: solid !important;
+  border-color: #e3e3e3;
+  padding: 0 1% !important;
+  -mox-box-sizing: border-box !important;
+  -webkit-box-sizing: border-box !important;
+  box-sizing: border-box !important;
+}
+.ctx-content-text .ctx-links-header p {
+  line-height: normal !important;
+  font-weight: bold !important;
+  font-family: Gotham, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  margin: 0.7em 0 0.7em 0 !important;
+  font-size: 19px;
+  color: #6d6d6d;
+}
+.ctx-content-text .ctx-link,
+.ctx-content-text .ctx-link a {
+  font-family: Gotham, "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+.ctx-content-text .ctx-link {
+  line-height: 1.3em !important;
+  margin: 0.85em 0 !important;
+  padding: 0 0 0 1.5em !important;
+  text-align: justify;
+  font-size: 14px;
+}
+.ctx-content-text .ctx-link a {
+  text-decoration: none !important;
+  font-size: inherit !important;
+  color: #6d6d6d;
+}
+.ctx-content-text .ctx-icon {
+  position: relative !important;
+  margin: 0 0 0 -1.5em !important;
+  width: 1.5em !important;
+  display: inline-block !important;
+  text-align: left !important;
+}
+.ctx-content-text .ctx-icon.ctx-bullet {
+  font-family: "Arial Black", sans-serif !important;
+}
+.ctx-content-text .ctx-bullet:before {
+  content: "\2022";
+  margin-left: 0.2142em;
+}
+.ctx-content-text .ctx-icon.ctx-icon-twitter:before {
+  font-size: 1.2em;
+}
+/* Text's styles for different screen sizes*/
+.ctx-content-text.ctx-module-default .ctx-section {
+  width: 50% !important;
+  float: left !important;
+}
+.ctx-content-text.ctx-module-default .ctx-section.ctx-wide {
+  width: 100% !important;
+}
+.ctx-content-text.ctx-module-default .ctx-section:nth-child(odd) {
+  clear: both !important;
+}
+.ctx-content-text.ctx-module-default .ctx-section:nth-child(even) {
+  padding-left: 3% !important;
+}
+.ctx-content-text.ctx-module-mobile .ctx-section {
+  width: 100% !important;
+  margin: 3px 0 !important
+}
+/* Workaround to avoid random text size boost on mobile Chrome/Webkit */
+.ctx-content-text .ctx-section {
+  max-height: 5000em;
+}

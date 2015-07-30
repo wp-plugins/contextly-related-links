@@ -1,4 +1,9 @@
-<!DOCTYPE html>
+<?php
+/**
+ * @var string $language
+ * @var string $head
+ */
+?><!DOCTYPE html>
 <html lang="<?php print $language; ?>">
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>

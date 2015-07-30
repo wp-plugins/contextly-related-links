@@ -2,61 +2,54 @@
 
   /**
    * @class
-   * @extends Contextly.metadataParser.Default
+   * @extends Contextly.metadataParser.BaseSingleTag
+   * @extends Contextly.metadataParser.ForeignHelper
    */
   Contextly.metadataParser.ParselyPage = Contextly.createClass({
 
-    extend: Contextly.metadataParser.Default,
+    extend: [Contextly.metadataParser.BaseSingleTag, Contextly.metadataParser.ForeignHelper],
 
     statics: /** @lends Contextly.metadataParser.ParselyPage */ {
 
-      findElement: function() {
-        return $('head meta[name="parsely-page"][content]')
+      getPropertiesMap: function() {
+        return {
+          post_id: ['post_id'],
+          type: ['type'],
+          title: ['title'],
+          image: ['image_url'],
+          tags: ['tags'],
+          url: ['link'],
+          author_name: ['authors'],
+          categories: ['section'],
+          pub_date: ['pub_date']
+        }
       },
 
-      parseData: function() {
-        var data = {};
-        var map = {
-          post_id: 'post_id',
-          type: 'type',
-          title: 'title',
-          image: 'image_url',
-          tags: 'tags',
-          url: 'link'
+      getConverters: function() {
+        return {
+          authors: this.convertToCommaSeparated,
+          section: this.convertToArray,
+          pub_date: this.convertDateIso8601,
+          image_url: this.convertUrlToAbsolute,
+          link: this.convertUrlToAbsolute
         };
-        var parsely = Contextly.metadataParser.Default.parseData.apply(this, arguments);
-        for (var dst in map) {
-          var src = map[dst];
-          if (typeof parsely[src] !== 'undefined') {
-            data[dst] = parsely[src];
-          }
-        }
+      },
 
-        // Handle fields with format conversion: author_name, pub_date and
-        // categories.
-        if (Contextly.Utils.isArray(parsely.authors) && parsely.authors.length) {
-          // Join authors with a comma.
-          data.author_name = parsely.authors.join(', ');
-        }
-        if (typeof parsely.section !== 'undefined') {
-          // Wrap section in an array.
-          data.categories = [parsely.section];
-        }
-        if (typeof parsely.pub_date !== 'undefined') {
-          var matched = parsely.pub_date.match(/^(\d+\-\d+\-\d+)(?:T(\d+:\d+:\d+))*/);
-          if (matched) {
-            data.pub_date = matched[1];
-            if (matched.length >= 3) {
-              data.pub_date += ' ' + matched[2];
-            }
-          }
-        }
+      findSource: function() {
+        return $('meta[name="parsely-page"][content]:first')
+          .attr('content');
+      },
 
-        return data;
+      parseSource: function() {
+        var source = this.getSource();
+        var raw = this.parseJson(source, {});
+        return this.mapAll(raw);
       }
 
     }
 
   });
+
+  Contextly.metadataFormats['ParselyPage'] = Contextly.metadataParser.ParselyPage;
 
 })(jQuery);

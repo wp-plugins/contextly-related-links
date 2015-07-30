@@ -3,9 +3,10 @@
   "include": [
     "components/create-class",
     "components/proxy",
-    "components/events",
     "components/api-client",
     "components/visitor",
+    "components/callback-queue",
+    "components/transmitter",
     "widgets/factory"
   ],
 

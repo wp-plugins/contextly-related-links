@@ -1,0 +1,18 @@
+{
+  "cdn": {
+    "http": "http://contextlysitescripts.contextly.com/kit/assets/",
+    "https": "https://c714015.ssl.cf2.rackcdn.com/kit/assets/"
+  },
+  "main": {
+    "dev": "//dev.contextly.com/",
+    "live": "//contextly.com/"
+  },
+  "cp": {
+    "dev": "https://dev.contextly.com/",
+    "live": "https://contextly.com/"
+  },
+  "api": {
+    "dev": "//devrest.contextly.com/",
+    "live": "//rest.contextly.com/"
+  }
+}

@@ -5,8 +5,6 @@
  */
 class ContextlyKitApi extends ContextlyKitBase {
 
-  const API_VERSION = '1.4.2';
-
   const HEADER_TOKEN = 'Contextly-Access-Token';
   const HEADER_APP_ID = 'Contextly-App-ID';
 
@@ -28,9 +26,9 @@ class ContextlyKitApi extends ContextlyKitBase {
   protected $currentRequest = NULL;
 
   /**
-   * Current or last response in json format.
+   * Last raw response, decoded from JSON format.
    *
-   * @var null
+   * @var object|null
    */
   protected $currentResponse = NULL;
 
@@ -219,9 +217,16 @@ class ContextlyKitApi extends ContextlyKitBase {
       $url .= $name . '/' . $value . '/';
     }
 
-    // POST data. Add client version.
+    // POST data. Add client name, its version and Kit version.
     $data = $request->data;
-    $data['version'] = self::API_VERSION;
+    $settings = $this->kit->getSettings();
+    $data['version'] = $this->kit->version();
+    if (isset($settings->client)) {
+      $data['client'] = $settings->client;
+      if (isset($settings->clientVersion)) {
+        $data['client'] .= ':' . $settings->clientVersion;
+      }
+    }
 
     // HTTP headers. Add default referrer.
     $headers = $request->headers;
@@ -238,7 +243,7 @@ class ContextlyKitApi extends ContextlyKitBase {
       throw $this->kit->newApiException("Unable to decode JSON response from server.", $request, $response);
     }
 
-	$this->currentResponse = $result;
+    $this->currentResponse = $result;
 
     // Check required properties on the result.
     $this->checkRequiredProperties($request, $response, $result);
@@ -333,7 +338,7 @@ class ContextlyKitApi extends ContextlyKitBase {
   }
 
   /**
-   * @return null
+   * @return object|null
    */
   public function getCurrentResponse() {
     return $this->currentResponse;

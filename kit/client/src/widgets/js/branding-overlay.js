@@ -25,12 +25,9 @@
         if (!this.dialog) {
           var content = '<div id="ctx-branding-content" class="ctx-overlay-dialog">';
           content += '<div id="ctx-brd-modal">';
-          content += '<div id="ctx-brd-left-content">';
           content += '<div id="ctx-brd-logo"></div>';
           content += '<div id="ctx-brd-text-head"></div>';
           content += '<div id="ctx-brd-text"><p>Contextly recommends interesting and related stories using a unique combination of algorithms and editorial choices.<br><br>Publishers or advertisers who would like to learn more about Contextly can contact us&nbsp;<a href="http://contextly.com/sign-up/publishers/" target="_blank">here</a>.<br><br>We respect <a href="http://contextly.com/privacy/" target="_blank">readers&#8217; privacy </a>.&nbsp;</p></div>';
-          content += '</div>';
-          content += '<div id="ctx-brd-right-content"></div>';
           content += '</div>';
           content += '<a href="javascript:" id="ctx-brd-close">X</a>';
           content += '</div>';

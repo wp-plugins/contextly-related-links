@@ -21,17 +21,34 @@
         }
       },
 
+      isEmailConfirmed: function() {
+        return this.options.email_confirmed;
+      },
+
+      isNewsletterInputEnabled: function() {
+        return !this.isEmailConfirmed() && this.options.subscribe_newsletter;
+      },
+
       renderDialog: function() {
+        var isConfirmed = this.isEmailConfirmed();
+        var isNewsletterEnabled = this.isNewsletterInputEnabled();
+
         if (!this.dialog) {
-          var newsletterSubscribe = '';
-          if (this.options.subscribe_newsletter) {
-            newsletterSubscribe = '<div class="ctx-newsletter-row ctx-input-row">'
-              + '<input class="ctx-newsletter" type="checkbox" id="ctx-storyline-subscribe-newsletter" checked="checked">'
-              + ' '
-              + '<label class="ctx-newsletter-label" for="ctx-storyline-subscribe-newsletter">'
-              + Contextly.Utils.escape("Also add me to this publisher's newsletter.")
-              + '</label>'
+          var inputs = '';
+          if (!isConfirmed) {
+            inputs = '<div class="ctx-email-row ctx-input-row">'
+              + '<input type="email" class="ctx-email" placeholder="Email address" />'
               + '</div>';
+
+            if (isNewsletterEnabled) {
+              inputs += '<div class="ctx-newsletter-row ctx-input-row">'
+                + '<input class="ctx-newsletter" type="checkbox" id="ctx-storyline-subscribe-newsletter" checked="checked">'
+                + ' '
+                + '<label class="ctx-newsletter-label" for="ctx-storyline-subscribe-newsletter">'
+                + Contextly.Utils.escape( this.options.subscribe_newsletter_title )
+                + '</label>'
+                + '</div>';
+            }
           }
 
           var content = '<div id="ctx-storyline-popup" class="ctx-overlay-dialog">'
@@ -42,10 +59,7 @@
             + '</div>'
             + '<div class="ctx-body">'
             + '<div class="ctx-message-row"></div>'
-            + '<div class="ctx-email-row ctx-input-row">'
-            + '<input type="email" class="ctx-email" placeholder="Email address" />'
-            + '</div>'
-            + newsletterSubscribe
+            + inputs
             + '<div class="ctx-follow-row ctx-input-row">'
             + '<button class="ctx-follow"><span class="ctx-follow-label">Follow</span></button>'
             + '</div>'
@@ -70,7 +84,7 @@
             .show();
           this.getEmailInput()
             .val('');
-          if (this.options.subscribe_newsletter) {
+          if (isNewsletterEnabled) {
             // Avoid using jQuery.attr() as it works different in jQuery >=1.6
             // and <1.6. DOM property is more portable here.
             this.getNewsletterCheckbox()[0].checked = true;
@@ -82,7 +96,7 @@
         Contextly.overlay.Base.bindHandlers.apply(this, arguments);
 
         this.getSubmit()
-          .bind(this.ns('click'), this.proxy(this.subscribeToStoryLine, false, true));
+          .bind(this.ns('click'), this.proxy(this.onSubmit, false, true));
         this.getEmailInput()
           .bind(this.ns('keypress'), this.proxy(this.onEmailInputKeyPress, false, true))
       },
@@ -102,29 +116,58 @@
 
       onEmailInputKeyPress: function(e) {
         if (e.which == 13) {
-          this.subscribeToStoryLine(e);
+          this.onSubmit(e);
         }
       },
 
-      subscribeToStoryLine: function (e) {
+      onOpeningComplete: function() {
+        Contextly.overlay.Base.onOpeningComplete.apply(this, arguments);
+
+        if (!this.animating) {
+          if (this.isEmailConfirmed()) {
+            this.subscribeToStoryLine();
+          }
+          else {
+            this.registerButtonClick();
+          }
+        }
+      },
+
+      onSubmit: function(e) {
         e.preventDefault();
 
-        var email = $.trim(this.getEmailInput().val());
-        if (email && Contextly.Utils.isEmailValid(email)) {
-          this.lockSubmit();
-          this.hideMessage();
+        var params = {};
+        if (!this.isEmailConfirmed()) {
+          var email = $.trim(this.getEmailInput().val());
+          if (!email || !Contextly.Utils.isEmailValid(email)) {
+            this.errorMessage('Please enter valid email address.');
+            return;
+          }
 
-          var params = {
-            email: email
-          };
-          if (this.options.subscribe_newsletter) {
+          params.email = email;
+          if (this.isNewsletterInputEnabled()) {
             params.subscribe_newsletter = this.getNewsletterCheckbox().is(':checked') ? 1 : 0;
           }
-          var callback = this.proxy(this.onSubscribeComplete, false, true);
-          Contextly.RESTClient.call('storylines', 'subscribe', params, callback);
+        }
+
+        this.subscribeToStoryLine(params);
+      },
+
+      registerButtonClick: function() {
+        Contextly.RESTClient.call('storylines', 'button-click');
+      },
+
+      subscribeToStoryLine: function(params) {
+        this.lockSubmit();
+        this.hideMessage();
+
+        params = params || {};
+        var callback = this.proxy(this.onSubscribeComplete, false, true);
+        if (this.isEmailConfirmed()) {
+          Contextly.RESTClient.call('storylines', 'button-click', params, callback);
         }
         else {
-          this.errorMessage('Please enter valid email address.');
+          Contextly.RESTClient.call('storylines', 'subscribe', params, callback);
         }
       },
 
@@ -132,7 +175,12 @@
         this.unlockSubmit();
 
         if (response && response.success) {
-          this.successMessage('Successfully subscribed!');
+          if (response.confirmed) {
+            this.successMessage('We added this story to your FollowUp list.');
+          }
+          else {
+            this.successMessage('Almost done! Check your email.');
+          }
         }
         else {
           var message = 'Something went wrong.';
@@ -175,7 +223,7 @@
         return this.dialog.find('.ctx-input-row');
       },
 
-      showMessage: function(text, className, animate) {
+      showMessage: function(text, className) {
         var message = this.getMessage();
         var duration = this.options.duration;
 

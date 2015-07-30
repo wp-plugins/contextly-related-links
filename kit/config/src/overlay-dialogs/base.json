@@ -4,6 +4,7 @@
     "libraries/font-awesome",
     "libraries/scroll-to",
     "components/handlebars",
+    "components/utils",
     "components/ui-renderer"
   ],
 

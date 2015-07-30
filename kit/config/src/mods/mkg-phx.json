@@ -1,0 +1,11 @@
+{
+  "aggregate": true,
+  "include": [
+    "widgets/page-view"
+  ],
+
+  "base": "mods/mkg-phx",
+  "js": [
+    "metadata-parser"
+  ]
+}

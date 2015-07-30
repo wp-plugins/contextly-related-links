@@ -2,53 +2,21 @@
 
   /**
    * @class
-   * @extends Contextly.metadataParser.Base
+   * @extends Contextly.metadataParser.BaseSingleTag
    */
   Contextly.metadataParser.Default = Contextly.createClass({
 
-    extend: Contextly.metadataParser.Base,
+    extend: Contextly.metadataParser.BaseSingleTag,
 
     statics: /** @lends Contextly.metadataParser.Default */ {
 
-      findElement: function() {
-        return $('head meta[name="contextly-page"][content]');
-      },
-
-      getElement: function() {
-        if (typeof this.element === 'undefined') {
-          this.element = this.findElement();
-        }
-
-        return this.element;
-      },
-
-      dataExists: function() {
-        return !!this.getElement().length;
-      },
-
-      parseData: function() {
-        var data = {};
-
-        var json = this.getElement()
+      findSource: function() {
+        return $('meta[name="contextly-page"][content]:first')
           .attr('content');
-        if (json) {
-          try {
-            data = JSON.parse(json);
-          }
-          catch (e) {
-            Contextly.Utils.logError('Unable to parse Contextly metadata', e);
-          }
-        }
-
-        return data;
       },
 
-      getData: function(key) {
-        if (typeof this.data === 'undefined') {
-          this.data = this.parseData();
-        }
-
-        return this.data[key];
+      parseSource: function() {
+        return this.parseJson(this.getSource(), {});
       }
 
     }

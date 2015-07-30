@@ -1,0 +1,18 @@
+/* Widget transparent theme */
+.ctx-subscribe-link.ctx-theme-transparent {
+  color: #848383;
+  font-size: 14px;
+  background-color: transparent;
+
+  border-width: 1px !important;
+  border-style: solid !important;
+
+  -webkit-transition: color .2s linear, box-shadow .2s linear, border-color .2s linear !important;
+  -moz-transition: color .2s linear, box-shadow .2s linear, border-color .2s linear !important;
+  -o-transition: color .2s linear, box-shadow .2s linear, border-color .2s linear !important;
+  transition: color .2s linear, box-shadow .2s linear, border-color .2s linear !important;
+}
+.ctx-subscribe-link.ctx-theme-transparent:hover {
+  color: #1a8594;
+  box-shadow: 0 0 3px #1a8594;
+}

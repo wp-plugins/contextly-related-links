@@ -1,8 +1,8 @@
-(function($) {
+(function() {
 
   Contextly.PageView = Contextly.createClass({
 
-    extend: Contextly.Proxy.prototype,
+    extend: [Contextly.Proxy.prototype, Contextly.Transmitter.prototype],
 
     statics: /** @lends Contextly.PageView */ {
 
@@ -17,14 +17,11 @@
         }
         this.widgetsLoading = true;
 
-        this.attachLogEvents();
-
         var callback = this.proxy(this.onWidgetsLoadingComplete, false, true);
         Contextly.RESTClient.call('pagewidgets', 'get', {}, callback);
       },
 
       onWidgetsLoadingComplete: function(response) {
-        this.widgetsLoading = false;
         this.lastWidgetsResponse = response;
 
         if (response && response.success && response.entry) {
@@ -38,65 +35,61 @@
       onWidgetsLoadingSuccess: function(response) {
         this.broadcast(Contextly.PageView.broadcastTypes.LOADED, response);
 
-        // TODO: Drop on API update.
-        if (response.entry.snippets
-          && response.entry.snippets[0]
-          && response.entry.snippets[0].settings
-          && response.entry.snippets[0].settings.storyline_subscribe
-          && !response.entry.storyline_subscribe) {
-          response.entry.storyline_subscribe = [
-            {
-              type: Contextly.widget.types.STORYLINE_SUBSCRIBE,
-              settings: {
-                subscribe_newsletter: response.entry.snippets[0].settings.subscribe_newsletter || false
-              }
-            }
-          ];
-        }
-
         Contextly.Visitor.initIds(response);
         this.updatePostAction(response);
-        this.displayWidgets(response);
-
-        this.broadcast(Contextly.PageView.broadcastTypes.DISPLAYED, response);
+        this.loadWidgetAssets(response);
       },
 
       onWidgetsLoadingError: function(response) {
+        this.widgetsLoading = false;
         this.broadcast(Contextly.PageView.broadcastTypes.FAILED, response);
       },
 
-      broadcast: function(type) {
-        var args = Array.prototype.slice.call(arguments, 1);
-        $(window).triggerHandler(type, args);
-      },
-
-      getDisplayableWidgetCollections: function(response) {
-        return [
-          response.entry.snippets,
-          response.entry.sidebars,
-          response.entry.auto_sidebars,
-          response.entry.storyline_subscribe
-        ];
-      },
-
-      displayWidgets: function(response) {
-        var collections = this.getDisplayableWidgetCollections(response);
-
-        for (var i = 0; i < collections.length; i++) {
-          if (!collections[i]) {
-            continue;
+      extractWidgetsData: function(response) {
+        var result = [];
+        this.each(response.entry, function(collection) {
+          if (!Contextly.Utils.isArray(collection) || !collection.length) {
+            return;
           }
 
-          var widgets = collections[i];
-          for ( var j = 0; j < widgets.length; j++ ) {
-            var widgetObject = Contextly.widget.Factory.getWidget( widgets[ j ] );
-            if ( !widgetObject ) {
-              continue;
+          this.each(collection, function(data) {
+            if (!data || !data.type) {
+              return;
             }
 
-            widgetObject.display();
+            result.push(data);
+          });
+        });
+        return result;
+      },
+
+      loadWidgetAssets: function(response) {
+        var queue = new Contextly.CallbackQueue();
+
+        var widgets = [];
+        var widgetsData = this.extractWidgetsData(response);
+        this.each(widgetsData, function(data) {
+          var widget = Contextly.widget.Factory.getWidget(data);
+          if (!widget) {
+            return;
           }
-        }
+
+          widget.loadAssets(queue);
+          widgets.push(widget);
+        });
+
+        queue.appendResult(this.proxy(this.displayWidgets, false, true), widgets);
+        queue.check();
+      },
+
+      displayWidgets: function(widgets) {
+        this.widgetsLoading = false;
+
+        this.each(widgets, function(widget) {
+          widget.display();
+        });
+
+        this.broadcast(Contextly.PageView.broadcastTypes.DISPLAYED, widgets);
       },
 
       updatePostAction: function(response) {
@@ -105,12 +98,6 @@
         }
 
         Contextly.RESTClient.call('postsimport', 'put');
-      },
-
-      attachLogEvents: function() {
-        Contextly.LogPluginEvents.attachEvent('contextlyDataFailed');
-        Contextly.LogPluginEvents.attachEvent('contextlySettingsAuthSuccess');
-        Contextly.LogPluginEvents.attachEvent('contextlySettingsAuthFailed');
       }
 
     }
@@ -129,4 +116,4 @@
     Contextly.PageView.loadWidgets();
   };
 
-})(jQuery);
+})();

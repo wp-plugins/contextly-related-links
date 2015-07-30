@@ -1,0 +1,31 @@
+/* Widget split button theme */
+.ctx-subscribe-link.ctx-theme-split-button {
+  font-size: 20px;
+}
+
+.ctx-subscribe-link.ctx-theme-split-button .ctx-subscribe-logo {
+  background-color: #21abab;
+  color: #ffffff;
+  border-color: #198282;
+  border-top-left-radius: 5px;
+  border-bottom-left-radius: 5px;
+  border-width: 1px !important;
+  border-style: solid !important;
+  padding-right: 0.5em !important;
+}
+.ctx-subscribe-link.ctx-theme-split-button .ctx-subscribe-label {
+  color: #4c4c4c;
+  background: #ffffff;
+  border-top-right-radius: 5px;
+  border-bottom-right-radius: 5px;
+  border-color: #b5b5b5;
+  border-width: 1px !important;
+  border-left-width: 0 !important;
+  border-style: solid !important;
+}
+.ctx-subscribe-link.ctx-theme-split-button:hover .ctx-subscribe-logo {
+  background-color: #187b7b;
+}
+.ctx-subscribe-link.ctx-theme-split-button:hover .ctx-subscribe-label {
+  background-color: #ededed;
+}

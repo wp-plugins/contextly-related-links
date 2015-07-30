@@ -162,7 +162,7 @@
 
       this.e.sidebarPaneTypes
         .children('li')
-        .filter('[data-pane-type="' + this.escapeSizzleAttrValue(this.state.pane) + '"]')
+        .filter('[data-pane-type="' + Contextly.Utils.escapeSizzleAttrValue(this.state.pane) + '"]')
         .addClass('active');
     },
 
@@ -373,7 +373,7 @@
       this.state.changed = true;
       this.e.sidebarPaneTypes
         .find('.sidebar-pane-type')
-        .filter('[data-pane-type="' + this.escapeSizzleAttrValue(this.state.pane) + '"]')
+        .filter('[data-pane-type="' + Contextly.Utils.escapeSizzleAttrValue(this.state.pane) + '"]')
         .find('.sidebar-modified-flag')
         .show();
     },
@@ -394,7 +394,7 @@
         .filter('.active')
         .removeClass('active')
         .end()
-        .filter('[data-layout="' + this.escapeSizzleAttrValue(this.state.layout) + '"]')
+        .filter('[data-layout="' + Contextly.Utils.escapeSizzleAttrValue(this.state.layout) + '"]')
         .addClass('active');
     },
 
