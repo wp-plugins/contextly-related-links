@@ -103,6 +103,27 @@
 
       error: function(msg) {
         throw new Error(msg);
+      },
+
+      escapeRegexp: function(str) {
+        if (!str) {
+          return '';
+        }
+
+        // http://stackoverflow.com/a/6969486/404521
+        return str.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, "\\$&");
+      },
+
+      parseUrlQueryParameter: function(key, url) {
+        var expression = "[\\?&]" + this.escapeRegexp(key) + "\=([^&#]*)";
+        var regexp = new RegExp(expression);
+        var results = regexp.exec(url);
+        if (results == null) {
+          return '';
+        }
+        else {
+          return results[1];
+        }
       }
 
     }

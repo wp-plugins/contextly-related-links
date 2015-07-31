@@ -31,6 +31,10 @@ class Contextly
 	const SL_MODULE_SHORT_CODE_CLASS = 'ctx_widget_hidden';
 	const SL_MODULE_SHORT_CODE_ID = 'ctx_sl_button_short_code';
 
+	const SIDERAIL_MODULE_SHORT_CODE = 'contextly_siderail';
+	const SIDERAIL_MODULE_SHORT_CODE_CLASS = 'ctx_widget_hidden';
+	const SIDERAIL_MODULE_SHORT_CODE_ID = 'ctx_siderail_short_code';
+
 	/**
 	 * @var ContextlyKitApi
 	 */
@@ -67,6 +71,8 @@ class Contextly
 
         add_action( 'wp_enqueue_scripts', array( $this, 'loadScripts' ) );
         add_action( 'admin_enqueue_scripts', array( $this, 'loadScripts' ) );
+
+		add_action( 'widgets_init', array( $this, 'registerWidgets' ) );
 
         add_action( 'publish_post', array( $this, 'publishPost'), 10, 2 );
         add_action( 'save_post', array( $this, 'publishPost'), 10, 2 );
@@ -202,6 +208,7 @@ class Contextly
         add_shortcode('contextly_sidebar', array( $this, 'prepareSidebar' ) );
         add_shortcode('contextly_auto_sidebar', array( $this, 'prepareAutoSidebar' ) );
         add_shortcode(self::SL_MODULE_SHORT_CODE, array( $this, 'prepareSLButtonShortCode' ) );
+        add_shortcode(self::SIDERAIL_MODULE_SHORT_CODE, array( $this, 'prepareSiderailShortCode' ) );
     }
 
     private function addEditorButtons() {
@@ -450,7 +457,7 @@ class Contextly
 		return 'contextly-kit-widgets--page-view';
 	}
 
-	private function isLoadWidget()
+	public function isLoadWidget()
 	{
 		global $post;
 		$contextly_settings = new ContextlySettings();
@@ -797,6 +804,13 @@ class Contextly
 	}
 
 	/**
+	 * @return string
+	 */
+	public function prepareSiderailShortCode() {
+		return sprintf( "<div class='%s' id='%s'></div>", esc_attr( self::SIDERAIL_MODULE_SHORT_CODE_CLASS ), esc_attr( self::SIDERAIL_MODULE_SHORT_CODE_ID ) );
+	}
+
+	/**
 	 *
 	 */
 	public function insertMetatags()
@@ -876,6 +890,12 @@ class Contextly
 				->get();
 		} catch ( Exception $e ) {
 		}
+	}
+
+	public function registerWidgets()
+	{
+		require_once ( "ContextlySiderailWidget.php" );
+		register_widget( 'ContextlyWpSiderailWidget' );
 	}
 
 }

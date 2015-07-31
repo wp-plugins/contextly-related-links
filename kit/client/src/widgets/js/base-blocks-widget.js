@@ -94,6 +94,16 @@
 
     getLinkHTMLNormal: function(link, linkCounter) {
       return "<div class='ctx-link ctx-" + linkCounter + "'>" + this.getLinkATag(link, this.getInnerLinkHTML(link)) + "</div>";
+    },
+
+    getHandlers: function(widgetHasData) {
+      var handlers = Contextly.widget.TextSnippet.prototype.getHandlers.apply(this, arguments);
+
+      if (widgetHasData) {
+        handlers.queueTweetsRendering = true;
+      }
+
+      return handlers;
     }
 
   });

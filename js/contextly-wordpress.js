@@ -232,13 +232,10 @@ Contextly.WPPageView = Contextly.createClass( /** @lends Contextly.PageView.prot
             var main_module_id = '#ctx-module';
 
             if (jQuery(main_module_code_id).length) {
-                if ( jQuery(main_module_id).length ) {
-                    jQuery(main_module_id).appendTo(main_module_code_id);
-                } else {
-                    jQuery(main_module_code_id).html(
-                        "<div id='ctx-module' class='ctx-module-container ctx-clearfix'></div>"
-                    );
-                }
+                jQuery(".ctx-module-container").remove();
+                jQuery(main_module_code_id).html(
+                    "<div id='ctx-module' class='ctx-module-container ctx-clearfix'></div>"
+                );
             } else {
                 // We need to be sure that our control is last in content element
                 if (!jQuery(main_module_id).is(":last-child")) {
@@ -251,6 +248,18 @@ Contextly.WPPageView = Contextly.createClass( /** @lends Contextly.PageView.prot
                 jQuery('#ctx-sl-subscribe')
                     .appendTo(sl_button_code_id)
                     .removeClass( 'ctx_widget_hidden' );
+            }
+
+            var siderail_code_id = '#ctx_siderail_short_code';
+            var $siderail_containers = jQuery('.ctx-siderail-container');
+            if ( jQuery( siderail_code_id ).length ) {
+                if ( !$siderail_containers.length ) {
+                    jQuery( siderail_code_id).html( '<div class="ctx-siderail-container"></div>' );
+                } else {
+                    $siderail_containers
+                        .appendTo(siderail_code_id)
+                        .removeClass('ctx_widget_hidden');
+                }
             }
         }
 

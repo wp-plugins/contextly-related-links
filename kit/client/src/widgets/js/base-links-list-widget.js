@@ -13,10 +13,9 @@
     construct: function(widget) {
       this.widget = widget;
       this.widget_elements = null;
-      this.module_view_interval = null;
+      this.widget_view_interval = null;
+      this.widget_view_happened = false;
       this.first_link_elements = [];
-      this.document_hidden_property = null;
-      this.document_visibility_event = null;
     },
 
     getScreenWidth: function () {
@@ -62,147 +61,30 @@
       var handlers = Contextly.widget.Base.prototype.getHandlers.apply(this, arguments);
 
       if (widgetHasData) {
-        handlers.attachLinksPopups = true;
-        handlers.attachBrandingHandlers = true;
-        handlers.queueTweetsRendering = true;
         handlers.setUpResponsiveLayout = true;
       }
 
       return handlers;
     },
 
-    // TODO Refactor.
+    onVideoLinkClick: function(target, e) {
+      e.preventDefault();
+
+      var link = $(target);
+      var data = {
+        videoUrl: link.attr('href'),
+        videoTitle: link.attr('title')
+      };
+      Contextly.overlay.Video.open(data);
+
+      var contextly_url = link.attr('contextly-url');
+      Contextly.MainServerAjaxClient.call(contextly_url);
+    },
+
     attachLinksPopups: function() {
-      function onVideoLinkClick(target, e) {
-        e.preventDefault();
-        target = $(target);
-        var videoUrl = getVideoUrl(target);
-        var videoTitle = getVideoTitle(target);
-        openVideoPopup(videoUrl, videoTitle);
-
-        var contextly_url = getContextlyUrl(target);
-        Contextly.MainServerAjaxClient.call(contextly_url);
-      }
-
-      $("a[rel='ctx-video-dataurl']").click(this.proxy(onVideoLinkClick, true, true));
-
-      function getVideoClass() {
-        return "ctx-video-modal";
-      }
-
-      function videoOverlay() {
-        return "ctx-video-overlay";
-      }
-
-      function getCloseClass() {
-        return "ctx-video-close";
-      }
-
-      function getVideoUrl(getEvent) {
-        return getEvent.attr('href');
-      }
-
-      function getContextlyUrl(getEvent) {
-        return getEvent.attr('contextly-url');
-      }
-
-      function getVideoTitle(getEvent) {
-        return getEvent.attr('title');
-      }
-
-      function openVideoPopup(ctxVideoUrl, videoTitle) {
-        $('body').append(createVideoTmp(ctxVideoUrl, videoTitle));
-        showVideoPopup();
-      }
-
-      function showVideoPopup() {
-        modalFadeIn(getVideoClass());
-        modalFadeIn(videoOverlay());
-        modalClose();
-      }
-
-      function modalFadeIn(elClass) {
-        $("." + elClass).fadeIn("fast");
-      }
-
-      function modalClose() {
-        closeVideoEvent();
-        closeModalEsc();
-        closeModalBg();
-      }
-
-      function createVideoTmp(ctxVideoUrl, videoTitle) {
-        var videoLink = formattedYoutubeLink(ctxVideoUrl);
-        var videoId = linkFormatter('v', ctxVideoUrl);
-        var videoClass = getVideoClass();
-        var videotmp = '<div class="' + videoClass + '">' +
-          '<iframe src="' + videoLink + '" frameborder="no" class="ctx-video-frame"></iframe>' +
-          '<div class="ctx-video-loading" ></div>' +
-          '<p class="ctx-video-title">' + videoTitle + '</p>' +
-          '<a  href="#" class="ctx-video-close">&#215;</a>' +
-          '<div class="ctx-modal-social">' + facebookLike(ctxVideoUrl) + twitterIframe(videoId, videoTitle) + '</div>' +
-          '</div>' +
-          '<div class="' + videoOverlay() + '"></div>';
-        return videotmp;
-      }
-
-      function facebookLike(ctxVideoUrl) {
-        var script = '<iframe src="//www.facebook.com/plugins/like.php?href=' + ctxVideoUrl +
-          '&amp;width=100&amp;layout=button&amp;action=like&amp;show_faces=true&amp;share=true&amp;height=20" scrolling="no" frameborder="0" style="border:none; overflow:hidden; width:100px; height:20px;" allowTransparency="true"></iframe>';
-        return script;
-      }
-
-      function twitterIframe(videoId, videoTitle) {
-        var script = "<iframe allowtransparency='true' frameborder='0' scrolling='no' src='//platform.twitter.com/widgets/tweet_button.html?text=" + videoTitle + "&url=https%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3D" + videoId + "' style='width:98px; height:20px;'></iframe>";
-        return script;
-      }
-
-      function formattedYoutubeLink(videoUrl) {
-        var videoId = linkFormatter('v', videoUrl);
-        var fullLink = '//www.youtube.com/embed/' + videoId + "?rel=1&autoplay=1";
-        return fullLink;
-      }
-
-      function linkFormatter(name, url) {
-        name = name.replace(/[\[]/, "\\\[").replace(/[\]]/, "\\\]");
-        var regexS = "[\\?&]" + name + "=([^&#]*)";
-        var regex = new RegExp(regexS);
-        var results = regex.exec(url);
-        return ( results == null ) ? "" : results[1];
-      }
-
-      function closeVideoModal() {
-        modalFadeOut(getVideoClass());
-        modalFadeOut(videoOverlay());
-      }
-
-      function modalFadeOut(elClass) {
-        var removeEle = function() {
-          $(this).remove();
-        };
-        $("." + elClass).fadeOut("fast", removeEle);
-      }
-
-      function closeVideoEvent() {
-        $("." + getCloseClass()).click(function(e) {
-          e.preventDefault();
-          closeVideoModal();
-        });
-      }
-
-      function closeModalEsc() {
-        $('body').keyup(function(e) {
-          if (e.which === 27) {
-            closeVideoModal();
-          }
-        });
-      }
-
-      function closeModalBg() {
-        $("." + videoOverlay()).click(function(e) {
-          closeVideoModal();
-        });
-      }
+      this.getWidgetElements()
+        .find("a[rel='ctx-video-dataurl']")
+        .click(this.proxy(this.onVideoLinkClick, true, true));
     },
 
     queueTweetsRendering: function() {
@@ -599,61 +481,17 @@
     },
 
     attachWidgetViewHandler: function() {
-      // TODO Replace polling with browser events monitoring.
-      this.resumeWidgetViewPolling();
-
-      // Use page visibility API to poll on active page only.
-      var hidden, event;
-      if ((hidden = 'hidden') in document) {
-        event = "visibilitychange";
-      }
-      else if ((hidden = "mozHidden") in document) {
-        event = "mozvisibilitychange";
-      }
-      else if ((hidden = "webkitHidden") in document) {
-        event = "webkitvisibilitychange";
-      }
-      else {
+      if (this.widget_view_happened || this.widget_view_interval) {
+        Contextly.Utils.logError('Widget view handler attempted to bind after the widget view event has been recorded or polling is in progress.');
         return;
       }
 
-      event = this.nsEvent(event);
-      this.document_hidden_property = hidden;
-      this.document_visibility_event = event;
-      $(document).bind(event, this.proxy(this.onPageVisibilityChange));
+      // TODO Replace polling with browser events monitoring.
+      this.widget_view_interval = window.setInterval(this.proxy(this.checkWidgetVisibility), 300);
     },
 
     detachWidgetViewHandler: function() {
-      this.pauseWidgetViewPolling();
-
-      if (this.document_visibility_event != null) {
-        $(document).unbind(this.document_visibility_event);
-      }
-    },
-
-    onPageVisibilityChange: function() {
-      var hidden = this.document_hidden_property;
-      if (hidden == null) {
-        return;
-      }
-
-      if (document[hidden]) {
-        this.pauseWidgetViewPolling();
-      }
-      else {
-        this.resumeWidgetViewPolling();
-      }
-    },
-
-    pauseWidgetViewPolling: function() {
-      if (this.module_view_interval != null) {
-        clearInterval(this.module_view_interval);
-        this.module_view_interval = null;
-      }
-    },
-
-    resumeWidgetViewPolling: function() {
-      this.module_view_interval = window.setInterval(this.proxy(this.checkWidgetVisibility), 300);
+      clearInterval(this.widget_view_interval);
     },
 
     getFirstLinkElement: function(index, widgetElement) {
@@ -697,20 +535,30 @@
       this.eachElement(elements, function(element, index) {
         var firstLink = this.getFirstLinkElement(index, element);
         if (this.isElementInsideViewport(firstLink, viewport)) {
-          var guid = Contextly.Visitor.getGuid();
-          if (guid != null) {
-            Contextly.EventsLogger.logEvent(Contextly.widget.eventNames.MODULE_VIEW, {
-              event_guid: guid
-            });
-          }
-
-          this.detachWidgetViewHandler();
-          this.broadcast(Contextly.widget.broadcastTypes.IN_VIEWPORT);
+          this.onWidgetInViewport();
 
           // No reasons to continue the loop.
           return false;
         }
       });
+    },
+
+    onWidgetInViewport: function() {
+      this.detachWidgetViewHandler();
+
+      if (this.widget_view_happened) {
+        return;
+      }
+      this.widget_view_happened = true;
+
+      var guid = Contextly.Visitor.getGuid();
+      if (guid != null) {
+        Contextly.EventsLogger.logEvent(Contextly.widget.eventNames.MODULE_VIEW, {
+          event_guid: guid
+        });
+      }
+
+      this.broadcast(Contextly.widget.broadcastTypes.IN_VIEWPORT);
     }
 
   });

@@ -95,8 +95,13 @@
     getHandlers: function(widgetHasData) {
       var handlers = Contextly.widget.BaseLinksList.fn.getHandlers.apply(this, arguments);
 
-      if (widgetHasData && !Contextly.Settings.isAdmin()) {
-        handlers.attachWidgetViewHandler = true;
+      if (widgetHasData) {
+        handlers.attachLinksPopups = true;
+        handlers.attachBrandingHandlers = true;
+
+        if (!Contextly.Settings.isAdmin()) {
+          handlers.attachWidgetViewHandler = true;
+        }
       }
 
       return handlers;

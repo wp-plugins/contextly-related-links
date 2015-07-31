@@ -8,7 +8,8 @@
     SNIPPET: 'snippet',
     SIDEBAR: 'sidebar',
     AUTO_SIDEBAR: 'auto-sidebar',
-    STORYLINE_SUBSCRIBE: 'storyline-subscribe'
+    STORYLINE_SUBSCRIBE: 'storyline-subscribe',
+    SIDERAIL: 'side-rail'
   };
 
   // Snippet styles.

@@ -7,12 +7,13 @@
     "components/main-server-client",
     "components/utils",
     "components/events",
-    "components/overlay-base",
+    "components/overlay-dynamic",
     "components/color",
     "components/assets-manager"
   ],
   "expose": [
     "widgets/sidebar/default",
+    "widgets/siderail/default",
     "widgets/snippet/default",
     "widgets/snippet/blocks",
     "widgets/snippet/blocks2",
@@ -38,10 +39,13 @@
     "js/float-css",
     "js/sidebar-widget",
     "js/sidebar-css",
+    "js/siderail-widget",
+    "js/siderail-css",
     "js/storyline-widget",
     "js/storyline-css",
     "js/storyline-overlay",
     "js/branding-overlay",
+    "js/video-overlay",
     "js/page-events",
     "js/factory"
   ],

@@ -116,17 +116,6 @@
       return html;
     },
 
-    getHandlers: function(widgetHasData) {
-      // We don't need all the snippet handlers here, so jump over the parent.
-      var handlers = Contextly.widget.Base.prototype.getHandlers.apply(this, arguments);
-
-      if (widgetHasData) {
-        handlers.setUpResponsiveLayout = true;
-      }
-
-      return handlers;
-    },
-
     getAssetsPackageName: function() {
       return 'widgets/sidebar/default';
     },

@@ -23,6 +23,9 @@ Contextly.widget.Factory = Contextly.createClass({
         case Contextly.widget.types.STORYLINE_SUBSCRIBE:
           return new Contextly.widget.StoryLineSubscribe(widget);
 
+        case Contextly.widget.types.SIDERAIL:
+          return new Contextly.widget.Siderail(widget);
+
         default:
           // Snippet.
           switch (widget.settings.display_type) {

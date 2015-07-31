@@ -1,0 +1,61 @@
+.ctx-siderail-default {
+  overflow: hidden !important; /* Force new block formatting context */
+  border-width: 1px 0 !important;
+  border-style: solid !important;
+  border-color: #e3e3e3;
+}
+
+.ctx-siderail-default .ctx-sr-title p {
+  margin: 0.7em 8px !important;
+  padding: 0 !important;
+  text-align: center !important;
+  line-height: normal !important;
+  font-weight: bold !important;
+  font-family: Gotham, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 19px;
+  color: #6d6d6d;
+}
+
+.ctx-siderail-default .ctx-sr-content {
+  margin: 10px 0 20px 0 !important;
+}
+
+.ctx-siderail-default .ctx-sr-content:first-child {
+  margin-top: 20px !important;
+}
+
+.ctx-siderail-default .ctx-link {
+  margin: 0 0 18px 0 !important;
+  font-size: 14px;
+}
+
+.ctx-siderail-default .ctx-link a {
+  display: block !important;
+  text-decoration: none !important;
+}
+
+.ctx-siderail-default .ctx-link-image {
+  font-size: inherit !important;
+  padding: 0 0 0.5em 0 !important;
+}
+
+.ctx-siderail-default .ctx-link-image img {
+  display: block !important;
+  margin: 0 auto !important;
+  max-width: 100% !important;
+}
+
+.ctx-siderail-default .ctx-link-title,
+.ctx-siderail-default .ctx-link-title p {
+  font-size: inherit !important;
+}
+
+.ctx-siderail-default .ctx-link-title {
+  margin: 0 5px;
+}
+
+.ctx-siderail-default .ctx-link-title p {
+  text-align: center !important;
+  color: #6d6d6d;
+  font-family: Gotham, "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
